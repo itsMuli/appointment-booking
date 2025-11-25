@@ -1,4 +1,5 @@
 import artistModel from "../models/artistModel.js";
+import cloudinary from '../config/cloudinary.js';
 
 const getAllArtists = async (req, res) => {
   try {
@@ -27,12 +28,25 @@ const getArtistById = async (req, res) => {
 };
 
 const createArtist = async (req, res) => {
-  const artist = new artistModel({
-    name: req.body.name,
-    email: req.body.email,
-  });
-
   try {
+    let imageUrl = req.body.image;
+    
+    // Upload to Cloudinary if file is provided
+    if (req.file?.path) {
+      const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+        folder: 'artists',
+        resource_type: 'image'
+      });
+      imageUrl = uploadResult.secure_url;
+    }
+
+    const artist = new artistModel({
+      name: req.body.name,
+      email: req.body.email,
+      image: imageUrl,
+      bio: req.body.bio
+    });
+
     const newArtist = await artist.save();
     res.status(201).json(newArtist);
   } catch (err) {

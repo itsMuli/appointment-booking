@@ -1,16 +1,27 @@
 import JWT from "jsonwebtoken";
 import userModel from "../models/userModel.js";
 
-export const requireSignIn  = async (req, res, next) => {
+export const requireSignIn = async (req, res, next) => {
     try {
-        const decode = JWT.verify(
-            req.headers.authorization,
-            process.env.JWT_SECRET,
-        );
-        req.user = decode
+        const authHeader = req.headers.authorization || '';
+        const token = authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : authHeader;
+        
+        if (!token) {
+            return res.status(401).json({
+                success: false,
+                message: 'No token provided'
+            });
+        }
+        
+        const decoded = JWT.verify(token, process.env.JWT_SECRET);
+        req.user = decoded;
         next();
     } catch (error) {
         console.log(error);
+        return res.status(401).json({
+            success: false,
+            message: 'Invalid or expired token'
+        });
     }
 };
 
@@ -51,20 +62,14 @@ export const protect = async (req, res, next) => {
       }
   
       try {
-        // For testing purposes, attach a mock user ID if token validation fails
-        try {
-          const decoded = JWT.verify(token, process.env.JWT_SECRET);
-          req.user = decoded;
-        } catch (jwtError) {
-          console.warn('JWT verification failed, using mock user ID for testing');
-          req.user = { _id: '507f1f77bcf86cd799439011' }; // Mock MongoDB ObjectId
-        }
+        const decoded = JWT.verify(token, process.env.JWT_SECRET);
+        req.user = decoded;
         next();
       } catch (err) {
         console.error('Auth middleware error:', err);
         return res.status(401).json({
           success: false,
-          error: 'Invalid token'
+          error: 'Invalid or expired token'
         });
       }
     } catch (err) {

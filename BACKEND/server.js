@@ -12,6 +12,7 @@ import serviceRoutes from './routes/serviceRoutes.js';
 import categoryRoutes from './routes/categoryRoutes.js';
 import dateslotsRoutes from './routes/dateslotsRoute.js';
 import appointmentRoutes from './routes/appointmentRoutes.js'
+import analyticsRoutes from './routes/analyticsRoutes.js'
 
 dotenv.config()
 console.log('MONGODB_URL from env:', process.env.MONGODB_URL);
@@ -28,13 +29,13 @@ app.use(cors({
 }));
 
 app.use('/api/user', userRouter);
-app.use('/api', userRouter);
 app.use('/api/artist', artistRouter);
 app.use('/api/services', serviceRoutes);
 app.use('/api/categories', categoryRoutes);
-// app.use('/api/appointment', dateslotsRoutes);
+app.use('/api/dateslots', dateslotsRoutes);
 app.use('/api/details', detailRoutes);
 app.use('/api/appointment', appointmentRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 app.get('/', (req,res) => {
   res.send("Welcome to InfinityNailSalon")

@@ -1,7 +1,7 @@
 import express from 'express';
 import {
   getAllServices,
-  // getServicesByCategory,
+  getServicesByCategory,
   createService,
   updateService,
   deleteService,
@@ -10,7 +10,7 @@ import {
 const router = express.Router();
 
 router.get('/', getAllServices);
-// router.get('/category', getServicesByCategory);
+router.get('/category/:category', getServicesByCategory);
 router.post('/create-services', createService);
 router.put('/:id', updateService);
 router.delete('/:id', deleteService);

@@ -17,7 +17,15 @@ const userSchema = new mongoose.Schema ({
     appointmentData: {
         type: Object,
         default: {}
-    },   
+    },
+    resetPasswordToken: {
+        type: String,
+        default: null
+    },
+    resetPasswordExpires: {
+        type: Date,
+        default: null
+    },
 },{minimize: false})
 
 const userModel = mongoose.models.user || mongoose.model("user", userSchema)

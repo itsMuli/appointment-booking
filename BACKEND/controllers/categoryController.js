@@ -51,6 +51,27 @@ export const createCategory = async (req, res) => {
       res.status(500).json({ message: 'Server error while creating category.', error: error.message });
     }
 };
+  
+// UPDATE a category (admin)
+export const updateCategory = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, isActive } = req.body;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid category ID' });
+    }
+    const updated = await Category.findByIdAndUpdate(
+      id,
+      { ...(name !== undefined ? { name } : {}), ...(isActive !== undefined ? { isActive } : {}) },
+      { new: true }
+    );
+    if (!updated) return res.status(404).json({ message: 'Category not found' });
+    res.json({ success: true, category: updated });
+  } catch (error) {
+    console.error('Error updating category:', error);
+    res.status(500).json({ message: 'Error updating category', error: error.message });
+  }
+};
   // UPDATE a category
   // export const updateCategory = async (req, res) => {
   //   try {
@@ -148,25 +169,27 @@ export const createCategory = async (req, res) => {
       if (!name || typeof name !== 'string' || name.trim() === '') {
         return res.status(400).json({ message: 'Service name is required and must be a valid string.' });
       }
-      if (!duration || isNaN(duration) || duration <= 0) {
-        return res.status(400).json({ message: 'Service duration is required and must be a positive number.' });
+      if (!duration || typeof duration !== 'string' || duration.trim() === '') {
+        return res.status(400).json({ message: 'Service duration is required and must be a string.' });
       }
       if (!price || isNaN(price) || price <= 0) {
         return res.status(400).json({ message: 'Service price is required and must be a positive number.' });
       }
 
-      const newService = {
+      // Create a new Service document
+      const newService = await Service.create({
         name: name.trim(),
-        duration: Number(duration),
+        duration: duration.trim(),
         price: Number(price),
-        id: new mongoose.Types.ObjectId() 
-      };
+        category: id
+      });
   
+      // Add the service ObjectId to the category
       const updatedCategory = await Category.findByIdAndUpdate(
         id, 
-        { $push: { services: newService } }, 
+        { $push: { services: newService._id } }, 
         { new: true, runValidators: true }
-      );
+      ).populate('services');
   
       if (!updatedCategory) {
         return res.status(404).json({ message: 'Category not found.' });
