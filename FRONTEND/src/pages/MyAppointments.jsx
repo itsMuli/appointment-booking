@@ -41,15 +41,25 @@ const MyAppointments = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [modal, setModal] = useState({ open: false, variant: "info", title: "", message: "" });
-  const [pendingDeleteId, setPendingDeleteId] = useState(null);
+  const [pendingCancelId, setPendingCancelId] = useState(null);
   const navigate = useNavigate();
 
   const closeModal = () => {
     setModal((prev) => ({ ...prev, open: false }));
-    setPendingDeleteId(null);
+    setPendingCancelId(null);
   };
 
   const showModal = (opts) => setModal({ open: true, variant: "info", title: "", message: "", ...opts });
+
+  const statusBadgeClass = (status) => {
+    if (status === "Confirmed") return "bg-green-100 text-green-800";
+    if (status === "Pending") return "bg-yellow-100 text-yellow-800";
+    if (status === "Cancelled") return "bg-red-100 text-red-800";
+    if (status === "Rejected") return "bg-stone-200 text-stone-700";
+    return "bg-gray-100 text-gray-700";
+  };
+
+  const canCancel = (status) => status === "Pending" || status === "Confirmed";
 
   // Fetch appointments from the backend
   useEffect(() => {
@@ -120,56 +130,62 @@ const MyAppointments = () => {
     setFilteredAppointments(applyFilters(appointments, searchQuery, dateRange));
   };
 
-  const removeAppointmentLocally = (appointmentId) => {
+  const markCancelledLocally = (appointmentId) => {
     const id = String(appointmentId);
     setAppointments((prev) => {
-      const next = prev.filter((app) => String(app._id) !== id);
+      const next = prev.map((app) =>
+        String(app._id) === id ? { ...app, status: "Cancelled" } : app
+      );
       setFilteredAppointments(applyFilters(next, searchQuery, dateRange));
       return next;
     });
   };
 
-  const requestDeleteAppointment = (appointmentId) => {
-    setPendingDeleteId(appointmentId);
+  const requestCancelAppointment = (appointmentId) => {
+    setPendingCancelId(appointmentId);
     showModal({
       variant: "confirm",
-      title: "Delete appointment?",
-      message: "Are you sure you want to delete this appointment? This cannot be undone.",
-      confirmLabel: "Delete",
+      title: "Cancel appointment?",
+      message: "This booking will be marked Cancelled. Joan will be notified on WhatsApp.",
+      confirmLabel: "Cancel booking",
     });
   };
 
-  const confirmDeleteAppointment = async () => {
-    const appointmentId = pendingDeleteId;
+  const confirmCancelAppointment = async () => {
+    const appointmentId = pendingCancelId;
     if (!appointmentId) return;
-    setPendingDeleteId(null);
+    setPendingCancelId(null);
     setModal((prev) => ({ ...prev, open: false }));
 
     try {
-      const response = await axios.delete(`${API_URL}/api/appointment/${appointmentId}`, {
-        headers: {
-          Authorization: `Bearer ${contextToken}`,
-        },
-      });
+      const response = await axios.patch(
+        `${API_URL}/api/appointment/${appointmentId}/cancel`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${contextToken}`,
+          },
+        }
+      );
 
-      if (response.status === 200) {
-        removeAppointmentLocally(appointmentId);
+      if (response.data?.success) {
+        markCancelledLocally(appointmentId);
         showModal({
           variant: "success",
-          title: "Appointment deleted",
-          message: "The appointment was removed successfully.",
+          title: "Appointment cancelled",
+          message: "Your booking was cancelled successfully.",
           confirmLabel: "OK",
         });
       }
     } catch (error) {
       console.error(
-        "Error deleting appointment:",
+        "Error cancelling appointment:",
         error.response?.data?.message || error.message
       );
       showModal({
         variant: "error",
-        title: "Delete failed",
-        message: error.response?.data?.message || "Failed to delete appointment.",
+        title: "Cancel failed",
+        message: error.response?.data?.message || "Failed to cancel appointment.",
         confirmLabel: "OK",
       });
     }
@@ -272,25 +288,19 @@ const MyAppointments = () => {
                     </div>
                     <div className="flex flex-col items-end gap-2 shrink-0">
                       <span
-                        className={`inline-block px-2 py-1 rounded-full text-xs ${
-                          appointment.status === "Confirmed"
-                            ? "bg-green-100 text-green-800"
-                            : appointment.status === "Pending"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : appointment.status === "Cancelled"
-                            ? "bg-red-100 text-red-800"
-                            : "bg-green-100 text-green-800"
-                        }`}
+                        className={`inline-block px-2 py-1 rounded-full text-xs ${statusBadgeClass(appointment.status)}`}
                       >
                         {appointment.status}
                       </span>
-                      <button
-                        type="button"
-                        onClick={() => requestDeleteAppointment(appointment._id)}
-                        aria-label="Delete appointment"
-                      >
-                        <Trash2 className="w-5 h-5 text-red-400" />
-                      </button>
+                      {canCancel(appointment.status) && (
+                        <button
+                          type="button"
+                          onClick={() => requestCancelAppointment(appointment._id)}
+                          aria-label="Cancel appointment"
+                        >
+                          <Trash2 className="w-5 h-5 text-red-400" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -326,15 +336,7 @@ const MyAppointments = () => {
                       </td>
                       <td className="py-4 px-4">
                         <span
-                          className={`inline-block px-2 py-1 rounded-full text-sm ${
-                            appointment.status === "Confirmed"
-                              ? "bg-green-100 text-green-800"
-                              : appointment.status === "Pending"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : appointment.status === "Cancelled"
-                              ? "bg-red-100 text-red-800"
-                              : "bg-green-100 text-green-800"
-                          }`}
+                          className={`inline-block px-2 py-1 rounded-full text-sm ${statusBadgeClass(appointment.status)}`}
                         >
                           {appointment.status}
                         </span>
@@ -344,11 +346,17 @@ const MyAppointments = () => {
                         Ksh {appointment.service?.price}
                       </td>
                       <td className="py-4 px-4">
-                        <button
-                          onClick={() => requestDeleteAppointment(appointment._id)}
-                        >
-                          <Trash2 className="text-red-400 hover:text-red-500 cursor-pointer" />
-                        </button>
+                        {canCancel(appointment.status) ? (
+                          <button
+                            type="button"
+                            onClick={() => requestCancelAppointment(appointment._id)}
+                            aria-label="Cancel appointment"
+                          >
+                            <Trash2 className="text-red-400 hover:text-red-500 cursor-pointer" />
+                          </button>
+                        ) : (
+                          <span className="text-xs text-gray-400">—</span>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -521,7 +529,7 @@ const MyAppointments = () => {
         message={modal.message}
         confirmLabel={modal.confirmLabel || (modal.variant === "confirm" ? "Delete" : "OK")}
         onClose={closeModal}
-        onConfirm={modal.variant === "confirm" ? confirmDeleteAppointment : closeModal}
+        onConfirm={modal.variant === "confirm" ? confirmCancelAppointment : closeModal}
       />
       <div className="lg:hidden flex justify-between items-center p-3 bg-white shadow-sm mb-3 border rounded-xl">
         <h1 className="text-lg font-medium">My Bookings</h1>

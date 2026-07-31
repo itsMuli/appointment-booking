@@ -6,6 +6,7 @@ const statusClass = (status) => {
   const s = (status || '').toLowerCase();
   if (s === 'confirmed') return 'bg-green-100 text-green-700';
   if (s === 'cancelled') return 'bg-red-100 text-red-700';
+  if (s === 'rejected') return 'bg-stone-200 text-stone-700';
   return 'bg-amber-100 text-amber-800';
 };
 
@@ -90,6 +91,7 @@ const AdminAppointments = () => {
           <option value="Pending">Pending</option>
           <option value="Confirmed">Confirmed</option>
           <option value="Cancelled">Cancelled</option>
+          <option value="Rejected">Rejected</option>
         </select>
       </div>
 

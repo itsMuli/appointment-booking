@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { API_URL } from "../config";
 
-const works = [
+const fallbackWorks = [
   {
     id: 1,
     title: "Classic Gel Manicure",
@@ -46,16 +47,67 @@ const works = [
   },
 ];
 
-const categories = ["All", "Manicure", "Pedicure", "Extensions", "Nail Art"];
+const DEFAULT_CATEGORIES = ["All", "Manicure", "Pedicure", "Extensions", "Nail Art", "Feed"];
 
 const Blog = () => {
   const navigate = useNavigate();
   const [filter, setFilter] = useState("All");
+  const [works, setWorks] = useState(fallbackWorks);
+  const [fromInstagram, setFromInstagram] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const load = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/blog/posts`);
+        const data = await res.json();
+        if (cancelled) return;
+
+        if (data.success && Array.isArray(data.posts) && data.posts.length > 0 && !data.fallback) {
+          setWorks(
+            data.posts.map((p) => ({
+              id: p.id,
+              title: p.title,
+              category: p.category || "Feed",
+              image: p.image,
+              note: p.note,
+              permalink: p.permalink,
+            }))
+          );
+          setFromInstagram(true);
+        } else {
+          setWorks(fallbackWorks);
+          setFromInstagram(false);
+        }
+      } catch (err) {
+        console.error("Blog fetch failed:", err);
+        if (!cancelled) {
+          setWorks(fallbackWorks);
+          setFromInstagram(false);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const categories = useMemo(() => {
+    const fromPosts = [...new Set(works.map((w) => w.category).filter(Boolean))];
+    const merged = ["All", ...fromPosts.filter((c) => c !== "All")];
+    return merged.length > 1 ? merged : DEFAULT_CATEGORIES;
+  }, [works]);
 
   const visible = useMemo(() => {
     if (filter === "All") return works;
     return works.filter((w) => w.category === filter);
-  }, [filter]);
+  }, [filter, works]);
 
   return (
     <div id="blog-section" className="py-4 md:py-8 px-1 md:px-0 max-w-5xl mx-auto">
@@ -67,8 +119,9 @@ const Blog = () => {
           Blog & Gallery
         </h1>
         <p className="text-gray-600 text-sm md:text-base leading-relaxed max-w-2xl">
-          A look at manicures, pedicures, extensions, and nail art already done
-          at Infinity Nail Salon.
+          {fromInstagram
+            ? "Latest looks from Infinity Nail Salon on Instagram."
+            : "A look at manicures, pedicures, extensions, and nail art already done at Infinity Nail Salon."}
         </p>
       </div>
 
@@ -89,33 +142,62 @@ const Blog = () => {
         ))}
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-5">
-        {visible.map((work) => (
-          <article
-            key={work.id}
-            className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm"
-          >
-            <div className="aspect-square overflow-hidden">
-              <img
-                src={work.image}
-                alt={work.title}
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <div className="p-3 md:p-4">
-              <p className="text-[10px] uppercase tracking-wide text-primary font-semibold mb-1">
-                {work.category}
-              </p>
-              <h2 className="text-sm md:text-base font-semibold text-gray-800 leading-snug">
-                {work.title}
-              </h2>
-              <p className="text-xs md:text-sm text-gray-500 mt-1 line-clamp-2">
-                {work.note}
-              </p>
-            </div>
-          </article>
-        ))}
-      </div>
+      {loading ? (
+        <div className="flex justify-center py-16">
+          <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-5">
+          {visible.map((work) => {
+            const inner = (
+              <>
+                <div className="aspect-square overflow-hidden">
+                  <img
+                    src={work.image}
+                    alt={work.title}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                </div>
+                <div className="p-3 md:p-4">
+                  <p className="text-[10px] uppercase tracking-wide text-primary font-semibold mb-1">
+                    {work.category}
+                  </p>
+                  <h2 className="text-sm md:text-base font-semibold text-gray-800 leading-snug">
+                    {work.title}
+                  </h2>
+                  <p className="text-xs md:text-sm text-gray-500 mt-1 line-clamp-2">
+                    {work.note}
+                  </p>
+                </div>
+              </>
+            );
+
+            if (work.permalink) {
+              return (
+                <a
+                  key={work.id}
+                  href={work.permalink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm block hover:opacity-95 transition-opacity"
+                >
+                  {inner}
+                </a>
+              );
+            }
+
+            return (
+              <article
+                key={work.id}
+                className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm"
+              >
+                {inner}
+              </article>
+            );
+          })}
+        </div>
+      )}
 
       <div className="mt-8 md:mt-10 text-center">
         <p className="text-sm text-gray-500 mb-3">Like what you see?</p>

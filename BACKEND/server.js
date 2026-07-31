@@ -14,6 +14,8 @@ import categoryRoutes from './routes/categoryRoutes.js';
 import dateslotsRoutes from './routes/dateslotsRoute.js';
 import appointmentRoutes from './routes/appointmentRoutes.js'
 import analyticsRoutes from './routes/analyticsRoutes.js'
+import whatsappRoutes from './routes/whatsappRoutes.js'
+import blogRoutes from './routes/blogRoutes.js'
 
 dotenv.config();
 
@@ -34,6 +36,8 @@ app.use('/api/dateslots', dateslotsRoutes);
 app.use('/api/details', detailRoutes);
 app.use('/api/appointment', appointmentRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/whatsapp', whatsappRoutes);
+app.use('/api/blog', blogRoutes);
 
 app.get('/', (req, res) => {
   res.send('Welcome to InfinityNailSalon');
