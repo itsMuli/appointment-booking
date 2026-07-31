@@ -8,7 +8,13 @@ const Navbar = () => {
   const location = useLocation();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const { token: contextToken, setToken: setContextToken } = useContext(AppointmentContext);
+  const {
+    token: contextToken,
+    setToken: setContextToken,
+    user,
+    setUser,
+  } = useContext(AppointmentContext);
+  const isAdmin = user?.role === "admin";
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 0);
@@ -18,6 +24,7 @@ const Navbar = () => {
 
   const handleLogout = () => {
     setContextToken(null);
+    setUser(null);
     localStorage.removeItem("token");
     setShowProfileMenu(false);
     navigate("/");
@@ -79,26 +86,41 @@ const Navbar = () => {
               </button>
               {showProfileMenu && (
                 <div className="absolute top-full right-0 mt-2 min-w-48 bg-white border border-gray-100 rounded-xl shadow-lg flex flex-col gap-1 p-2 z-30">
-                  <button
-                    type="button"
-                    className="text-left px-3 py-2 rounded-lg hover:bg-stone-50 text-gray-700"
-                    onClick={() => {
-                      navigate("/my-appointments");
-                      setShowProfileMenu(false);
-                    }}
-                  >
-                    My Appointments
-                  </button>
-                  <button
-                    type="button"
-                    className="text-left px-3 py-2 rounded-lg hover:bg-stone-50 text-gray-700"
-                    onClick={() => {
-                      navigate("/appointment");
-                      setShowProfileMenu(false);
-                    }}
-                  >
-                    Book Appointment
-                  </button>
+                  {isAdmin ? (
+                    <button
+                      type="button"
+                      className="text-left px-3 py-2 rounded-lg hover:bg-stone-50 text-gray-700 font-medium"
+                      onClick={() => {
+                        navigate("/admin");
+                        setShowProfileMenu(false);
+                      }}
+                    >
+                      Admin Dashboard
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        className="text-left px-3 py-2 rounded-lg hover:bg-stone-50 text-gray-700"
+                        onClick={() => {
+                          navigate("/my-appointments");
+                          setShowProfileMenu(false);
+                        }}
+                      >
+                        My Appointments
+                      </button>
+                      <button
+                        type="button"
+                        className="text-left px-3 py-2 rounded-lg hover:bg-stone-50 text-gray-700"
+                        onClick={() => {
+                          navigate("/appointment");
+                          setShowProfileMenu(false);
+                        }}
+                      >
+                        Book Appointment
+                      </button>
+                    </>
+                  )}
                   <button
                     type="button"
                     className="text-left px-3 py-2 rounded-lg hover:bg-stone-50 text-gray-700"

@@ -34,56 +34,77 @@ const Login = () => {
       ...prev,
       [name]: value
     }));
-    // Clear error when user starts typing
     setError(null);
   };
 
-const onSubmitHandler = async (event) => {
-  event.preventDefault();
-  setIsLoading(true);
-  setError(null);
-
-  try {
-    const endpoint = currentState === 'Sign Up' ? '/api/user/register' : '/api/user/login';
-    const payload = currentState === 'Sign Up' 
-      ? formData 
-      : { email: formData.email, password: formData.password };
-
-    const response = await api.post(endpoint, payload);
-
-    if (response && response.data.success) {
-      if (currentState === 'Sign Up') {
-        toast.success('Successfully signed up! Please login to continue.');
-        // Notify other admin/dashboard windows to refresh user list
-        try { localStorage.setItem('userRegistered', '1'); } catch (e) {}
-        setCurrentState("Login");
-        setFormData({ name: '', email: '', password: '' });
-      } else {
-        setToken(response.data.token);
-        setUser(response.data.user); // Assuming the API returns user details
-        try { localStorage.setItem('token', response.data.token); } catch (e) {}
-        toast.success('Successfully logged in!');
-        navigate('/'); 
-      }
-    } else {
-      throw new Error(response.data.message || 'Authentication failed');
-    } 
-  } catch (error) {
-    let errorMessage = error.response?.data?.message || error.message || 'An error occurred';
-    if (error.code === 'ECONNABORTED' || /timeout/i.test(errorMessage)) {
-      errorMessage =
-        'Server took too long to respond. The backend may be waking up — please try again in a moment.';
-    } else if (error.message === 'Network Error') {
-      errorMessage =
-        'Cannot reach the server. Check that the backend is running and VITE_API_URL is correct.';
+  const persistSession = (token, user, isAdmin) => {
+    setToken(token);
+    setUser(user);
+    try {
+      localStorage.setItem('token', token);
+    } catch (e) {
+      /* ignore */
     }
-    setError(errorMessage);
-    toast.error(errorMessage);
-  } finally {
-    setIsLoading(false);
-  }
-};
+    toast.success(isAdmin ? 'Welcome back, admin!' : 'Successfully logged in!');
+    navigate(isAdmin ? '/admin' : '/');
+  };
 
+  const onSubmitHandler = async (event) => {
+    event.preventDefault();
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      if (currentState === 'Sign Up') {
+        const response = await api.post('/api/user/register', formData);
+        if (response?.data?.success) {
+          toast.success('Successfully signed up! Please login to continue.');
+          try {
+            localStorage.setItem('userRegistered', '1');
+          } catch (e) {
+            /* ignore */
+          }
+          setCurrentState('Login');
+          setFormData({ name: '', email: '', password: '' });
+        } else {
+          throw new Error(response.data.message || 'Authentication failed');
+        }
+        return;
+      }
+
+      const credentials = { email: formData.email, password: formData.password };
+
+      // Customer login first; if that fails, try admin credentials on the same form
+      try {
+        const response = await api.post('/api/user/login', credentials);
+        if (response?.data?.success) {
+          persistSession(response.data.token, response.data.user, false);
+          return;
+        }
+        throw new Error(response.data.message || 'Authentication failed');
+      } catch (customerErr) {
+        const adminRes = await api.post('/api/user/admin', credentials);
+        if (adminRes?.data?.success) {
+          persistSession(adminRes.data.token, adminRes.data.user, true);
+          return;
+        }
+        throw customerErr;
+      }
+    } catch (error) {
+      let errorMessage = error.response?.data?.message || error.message || 'An error occurred';
+      if (error.code === 'ECONNABORTED' || /timeout/i.test(errorMessage)) {
+        errorMessage =
+          'Server took too long to respond. The backend may be waking up — please try again in a moment.';
+      } else if (error.message === 'Network Error') {
+        errorMessage =
+          'Cannot reach the server. Check that the backend is running and VITE_API_URL is correct.';
+      }
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
