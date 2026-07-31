@@ -1,5 +1,6 @@
 import validator from "validator";
 import JWT from "jsonwebtoken";
+import mongoose from "mongoose";
 import userModel from "../models/userModel.js";
 import { comparePassword, hashPassword } from "../helpers/authHelper.js";
 import crypto from 'crypto';
@@ -9,8 +10,20 @@ const createToken = (id) => {
     return JWT.sign({id},process.env.JWT_SECRET)
 }
 
+const ensureDbConnected = (res) => {
+    if (mongoose.connection.readyState === 1) return true;
+    res.status(503).json({
+        success: false,
+        message:
+            'Database unavailable. On Render, set MONGODB_URL and in MongoDB Atlas → Network Access allow 0.0.0.0/0, then redeploy.',
+    });
+    return false;
+};
+
 export const loginController = async (req,res) => {
     try{
+        if (!ensureDbConnected(res)) return;
+
         const {email,password} = req.body
             if(!email || !password){
                 return res.status(404).send({
