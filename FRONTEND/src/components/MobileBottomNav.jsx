@@ -1,4 +1,4 @@
-import { Home, LayoutGrid, CalendarDays, Phone, User } from "lucide-react";
+import { Home, LayoutGrid, CalendarDays, BookOpen, User } from "lucide-react";
 import { useContext } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { AppointmentContext } from "../context/salonContext";
@@ -7,7 +7,7 @@ const items = [
   { id: "home", label: "Home", icon: Home, path: "/", section: "home-section" },
   { id: "services", label: "Services", icon: LayoutGrid, path: "/", section: "services-section" },
   { id: "book", label: "Book", icon: CalendarDays, path: "/", section: "appointment-section", prominent: true },
-  { id: "contact", label: "Contact", icon: Phone, path: "/contact" },
+  { id: "blog", label: "Blog", icon: BookOpen, path: "/blog" },
   { id: "account", label: "Account", icon: User, path: "/my-appointments" },
 ];
 
@@ -38,7 +38,7 @@ const MobileBottomNav = () => {
   const isActive = (item) => {
     if (item.id === "home") return location.pathname === "/";
     if (item.id === "book") return location.pathname === "/appointment";
-    if (item.id === "contact") return location.pathname === "/contact";
+    if (item.id === "blog") return location.pathname === "/blog" || location.pathname === "/about";
     if (item.id === "account") {
       return location.pathname === "/my-appointments" || location.pathname === "/login";
     }
