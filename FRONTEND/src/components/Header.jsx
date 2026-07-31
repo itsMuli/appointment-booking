@@ -4,32 +4,28 @@ const Header = () => {
   return (
     <div
       id="home-hero"
-      className="flex flex-col md:flex-row flex-wrap bg-secondary rounded-2xl px-5 py-6 md:px-10 lg:px-20 md:py-0 overflow-hidden"
+      className="relative flex flex-col md:flex-row flex-wrap bg-secondary rounded-2xl p-5 md:px-10 lg:px-20 md:py-0 overflow-hidden max-md:min-h-0"
     >
-      <div className="md:w-1/2 flex flex-col items-start justify-center gap-3 md:gap-4 py-2 md:py-[10vw] md:mb-[-30px]">
+      <div className="md:w-1/2 flex flex-col items-start justify-center gap-4 md:gap-4 py-0 md:py-[10vw] md:mb-[-30px] z-10">
         <p className="text-[11px] md:text-xs tracking-[0.14em] uppercase text-primary font-semibold">
           Book your appointment
         </p>
-        <p className="text-3xl md:text-4xl lg:text-5xl text-gray-900 font-semibold leading-tight">
-          <span className="md:hidden">Beautiful Nails, Expert Care</span>
-          <span className="hidden md:inline">Book Appointment</span>
+        <p className="text-[34px] leading-[1.15] md:text-4xl lg:text-5xl text-gray-900 font-semibold md:leading-tight">
+          Book Appointment
         </p>
-        <div className="flex flex-col md:flex-row items-center gap-3 text-gray-600 text-sm font-light">
-          <p>
+        <div className="text-gray-600 text-sm font-light max-w-prose">
+          <p className="line-clamp-3 md:line-clamp-none">
             At Infinity Nail Salon, we offer a wide range of services to keep
-            your nails looking their best.
-            <span className="hidden sm:inline">
-              {" "}
-              Whether you need a quick polish or a full set of acrylics, our
-              technicians are here to help.
-            </span>
+            your nails looking their best. Whether you are looking for a quick
+            polish change or a full set of acrylics, our experienced
+            technicians are here to help.
           </p>
         </div>
         <ScrollLink
           to="appointment-section"
           smooth={true}
           duration={400}
-          className="flex items-center gap-2 cursor-pointer bg-primary px-6 py-3 rounded-xl md:rounded-full text-white text-sm mt-1 hover:opacity-95 hover:scale-[1.02] transition-all duration-300"
+          className="flex items-center justify-center gap-2 cursor-pointer bg-primary w-[90%] md:w-auto px-6 py-3.5 rounded-xl md:rounded-full text-white text-sm mt-1 hover:opacity-95 hover:scale-[1.02] transition-all duration-300"
         >
           Book Appointment
           <svg
@@ -46,17 +42,13 @@ const Header = () => {
           </svg>
         </ScrollLink>
       </div>
-      <div className="md:w-1/2 relative flex justify-center md:justify-evenly mt-4 md:mt-0">
+
+      <div className="md:w-1/2 relative flex justify-end md:justify-evenly mt-4 md:mt-0 max-md:-mb-2">
         <img
-          className="w-full max-w-sm md:w-3/4 md:absolute bottom-0 h-44 md:h-auto object-cover object-top rounded-xl md:rounded-lg"
+          className="w-[78%] max-w-[280px] md:w-3/4 md:max-w-none md:absolute bottom-0 right-0 md:right-auto h-40 md:h-auto object-cover object-top rounded-xl md:rounded-lg max-md:translate-x-1"
           src="home.png"
           alt="Nail salon"
         />
-      </div>
-      <div className="flex md:hidden justify-center gap-1.5 w-full mt-4 mb-1">
-        <span className="w-2 h-2 rounded-full bg-primary" />
-        <span className="w-2 h-2 rounded-full bg-primary/30" />
-        <span className="w-2 h-2 rounded-full bg-primary/30" />
       </div>
     </div>
   );

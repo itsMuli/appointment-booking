@@ -201,46 +201,36 @@ const MyAppointments = () => {
 
   const AppointmentsView = () => {
     return (
-      <div className="flex-1 lg:ml-0">
-        <h2 className="font-medium text-xl mb-6 mt-2">My Bookings</h2>
-        <div className="flex flex-col md:flex-row gap-4 mb-8">
-          <div className="flex-1">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={handleSearchChange}
-              placeholder="Search appointment"
-              className="w-full p-2 border rounded-lg"
-            />
-          </div>
-
-          <div className="flex-1">
+      <div className="flex-1 lg:ml-0 min-w-0 w-full">
+        <h2 className="font-medium text-lg md:text-xl mb-4 mt-1 md:mt-2">My Bookings</h2>
+        <div className="flex flex-col gap-3 mb-5 md:mb-8">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={handleSearchChange}
+            placeholder="Search appointment"
+            className="w-full p-2.5 border rounded-xl text-sm"
+          />
+          <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-4">
             <input
               type="date"
-              className="w-full p-2 border rounded-lg"
+              className="w-full p-2 border rounded-xl text-sm min-w-0"
               value={dateRange.start}
               onChange={(e) =>
                 setDateRange((prev) => ({ ...prev, start: e.target.value }))
               }
-              placeholder="Start date"
             />
-          </div>
-
-          <div className="flex-1">
             <input
               type="date"
-              className="w-full p-2 border rounded-lg"
+              className="w-full p-2 border rounded-xl text-sm min-w-0"
               value={dateRange.end}
               onChange={(e) =>
                 setDateRange((prev) => ({ ...prev, end: e.target.value }))
               }
-              placeholder="End date"
             />
-          </div>
-          <div className="flex-1">
             <button
               onClick={() => handleSearch(searchQuery)}
-              className="w-24 p-2 border bg-primary text-white rounded-lg"
+              className="col-span-2 md:col-span-1 w-full p-2.5 bg-primary text-white rounded-xl text-sm"
             >
               Apply
             </button>
@@ -248,46 +238,41 @@ const MyAppointments = () => {
         </div>
 
         {filteredAppointments.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-12 text-center">
-            <div className="w-32 h-32 mb-4">
+          <div className="flex flex-col items-center justify-center p-8 md:p-12 text-center">
+            <div className="w-24 h-24 md:w-32 md:h-32 mb-3">
               <img
                 src="/make.png"
                 alt="No appointments"
                 className="w-full h-full object-contain bg-white"
               />
             </div>
-            <p className="text-gray-500 font-medium">No Appointments found!</p>
+            <p className="text-gray-500 font-medium text-sm">No Appointments found!</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-3 px-4">Booking ID</th>
-                  <th className="text-left py-3 px-4">Service</th>
-                  <th className="text-left py-3 px-4">Date & Time</th>
-                  <th className="text-left py-3 px-4">Status</th>
-                  <th className="text-left py-3 px-4">Staff</th>
-                  <th className="text-left py-3 px-4">Total</th>
-                  <th className="text-left py-3 px-4">Edit</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredAppointments.map((appointment, index) => (
-                  <tr key={appointment.id || index} className="border-b">
-                    <td className="py-4 px-4">#{appointment.bookingId}</td>
-                    <td className="py-4 px-4">{appointment.service.name}</td>
-                    <td className="py-4 px-4">
-                      <div>
-                        <p>{new Date(appointment.date).toLocaleDateString()}</p>
-                        <p className="text-sm text-gray-500">
-                          {appointment.timeSlot}
-                        </p>
-                      </div>
-                    </td>
-                    <td className="py-4 px-4">
+          <>
+            {/* Mobile cards */}
+            <div className="md:hidden space-y-3">
+              {filteredAppointments.map((appointment, index) => (
+                <div
+                  key={appointment._id || appointment.id || index}
+                  className="border border-gray-100 rounded-2xl p-4 shadow-sm bg-white"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-xs text-gray-400">#{appointment.bookingId}</p>
+                      <h3 className="font-semibold text-gray-800 truncate">
+                        {appointment.service?.name}
+                      </h3>
+                      <p className="text-sm text-gray-500 mt-1">
+                        {new Date(appointment.date).toLocaleDateString()} · {appointment.timeSlot}
+                      </p>
+                      <p className="text-sm text-gray-500 mt-0.5">
+                        {appointment.artist?.name} · Ksh {appointment.service?.price}
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-end gap-2 shrink-0">
                       <span
-                        className={`inline-block px-2 py-1 rounded-full text-sm ${
+                        className={`inline-block px-2 py-1 rounded-full text-xs ${
                           appointment.status === "Confirmed"
                             ? "bg-green-100 text-green-800"
                             : appointment.status === "Pending"
@@ -299,23 +284,78 @@ const MyAppointments = () => {
                       >
                         {appointment.status}
                       </span>
-                    </td>
-                    <td className="py-4 px-4">{appointment.artist?.name}</td>
-                    <td className="py-4 px-4">
-                      Ksh {appointment.service?.price}
-                    </td>
-                    <td className="py-4 px-4">
                       <button
+                        type="button"
                         onClick={() => requestDeleteAppointment(appointment._id)}
+                        aria-label="Delete appointment"
                       >
-                        <Trash2 className="text-red-400 hover:text-red-500 cursor-pointer" />
+                        <Trash2 className="w-5 h-5 text-red-400" />
                       </button>
-                    </td>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop table */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-3 px-4">Booking ID</th>
+                    <th className="text-left py-3 px-4">Service</th>
+                    <th className="text-left py-3 px-4">Date & Time</th>
+                    <th className="text-left py-3 px-4">Status</th>
+                    <th className="text-left py-3 px-4">Staff</th>
+                    <th className="text-left py-3 px-4">Total</th>
+                    <th className="text-left py-3 px-4">Edit</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {filteredAppointments.map((appointment, index) => (
+                    <tr key={appointment.id || index} className="border-b">
+                      <td className="py-4 px-4">#{appointment.bookingId}</td>
+                      <td className="py-4 px-4">{appointment.service.name}</td>
+                      <td className="py-4 px-4">
+                        <div>
+                          <p>{new Date(appointment.date).toLocaleDateString()}</p>
+                          <p className="text-sm text-gray-500">
+                            {appointment.timeSlot}
+                          </p>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4">
+                        <span
+                          className={`inline-block px-2 py-1 rounded-full text-sm ${
+                            appointment.status === "Confirmed"
+                              ? "bg-green-100 text-green-800"
+                              : appointment.status === "Pending"
+                              ? "bg-yellow-100 text-yellow-800"
+                              : appointment.status === "Cancelled"
+                              ? "bg-red-100 text-red-800"
+                              : "bg-green-100 text-green-800"
+                          }`}
+                        >
+                          {appointment.status}
+                        </span>
+                      </td>
+                      <td className="py-4 px-4">{appointment.artist?.name}</td>
+                      <td className="py-4 px-4">
+                        Ksh {appointment.service?.price}
+                      </td>
+                      <td className="py-4 px-4">
+                        <button
+                          onClick={() => requestDeleteAppointment(appointment._id)}
+                        >
+                          <Trash2 className="text-red-400 hover:text-red-500 cursor-pointer" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
     );
@@ -432,11 +472,11 @@ const MyAppointments = () => {
   };
 
   const SidebarContent = () => (
-    <ul className="space-y-8">
+    <ul className="space-y-4 md:space-y-8">
       <li
         onClick={() => handleSidebarItemClick("appointments")}
-        className={`flex items-center gap-2 font-light cursor-pointer ${
-          currentView === "appointments" ? "text-red-600" : "text-gray-500"
+        className={`flex items-center gap-2 font-light cursor-pointer text-sm ${
+          currentView === "appointments" ? "text-primary" : "text-gray-500"
         }`}
       >
         <Calendar className="w-5 h-5" />
@@ -444,8 +484,8 @@ const MyAppointments = () => {
       </li>
       <li
         onClick={() => handleSidebarItemClick("edit-account")}
-        className={`flex items-center gap-2 font-light cursor-pointer ${
-          currentView === "edit-account" ? "text-red-600" : "text-gray-500"
+        className={`flex items-center gap-2 font-light cursor-pointer text-sm ${
+          currentView === "edit-account" ? "text-primary" : "text-gray-500"
         }`}
       >
         <User className="w-5 h-5" />
@@ -453,8 +493,8 @@ const MyAppointments = () => {
       </li>
       <li
         onClick={() => handleSidebarItemClick("change-password")}
-        className={`flex items-center gap-2 font-light cursor-pointer ${
-          currentView === "change-password" ? "text-red-600" : "text-gray-500"
+        className={`flex items-center gap-2 font-light cursor-pointer text-sm ${
+          currentView === "change-password" ? "text-primary" : "text-gray-500"
         }`}
       >
         <KeyRound className="w-5 h-5" />
@@ -462,8 +502,8 @@ const MyAppointments = () => {
       </li>
       <li
         onClick={() => handleSidebarItemClick("logout")}
-        className={`flex items-center gap-2 font-light cursor-pointer ${
-          currentView === "logout" ? "text-red-600" : "text-gray-500"
+        className={`flex items-center gap-2 font-light cursor-pointer text-sm ${
+          currentView === "logout" ? "text-primary" : "text-gray-500"
         }`}
       >
         <LogOut className="w-5 h-5" />
@@ -473,7 +513,7 @@ const MyAppointments = () => {
   );
 
   return (
-    <div className="my-4">
+    <div className="my-2 md:my-4 max-w-full overflow-x-hidden">
       <Modal
         open={modal.open}
         variant={modal.variant}
@@ -483,23 +523,23 @@ const MyAppointments = () => {
         onClose={closeModal}
         onConfirm={modal.variant === "confirm" ? confirmDeleteAppointment : closeModal}
       />
-      <div className="lg:hidden flex justify-between items-center p-4 bg-white shadow-md my-6 border rounded-md">
-        <h1 className="text-xl">My Bookings</h1>
+      <div className="lg:hidden flex justify-between items-center p-3 bg-white shadow-sm mb-3 border rounded-xl">
+        <h1 className="text-lg font-medium">My Bookings</h1>
         <button
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
           className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded-lg"
         >
-          <User className="w-6 h-6" />
-          <span>{user?.name || "User"}</span>
+          <User className="w-5 h-5" />
+          <span className="text-sm truncate max-w-[100px]">{user?.name || "User"}</span>
         </button>
       </div>
       {isSidebarOpen && (
-        <div className="lg:hidden xs:right-2 right-20 top-46 absolute text-base flex-col bg-white border group-hover:block z-20 p-4 shadow-md">
+        <div className="lg:hidden relative z-20 mb-3 bg-white border rounded-xl p-4 shadow-md">
           <SidebarContent />
         </div>
       )}
-      <div className="flex flex-col lg:flex-row gap-8 w-full min-h-[600px] mx-auto rounded-lg p-4 border">
-        <div className="hidden lg:block w-64 bg-white rounded-lg p-6 border-r-2 border-gray-200">
+      <div className="flex flex-col lg:flex-row gap-4 lg:gap-8 w-full min-h-0 lg:min-h-[600px] mx-auto rounded-xl p-3 md:p-4 border overflow-hidden">
+        <div className="hidden lg:block w-64 bg-white rounded-lg p-6 border-r-2 border-gray-200 shrink-0">
           <div className="flex flex-col items-center my-8">
             <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center mb-3">
               <User className="w-6 h-6 text-gray-600" />

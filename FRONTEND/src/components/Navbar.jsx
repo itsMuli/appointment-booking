@@ -58,10 +58,10 @@ const Navbar = () => {
           <li className="py-1 hover:text-black cursor-pointer" onClick={() => handleNavigation("services-section")}>
             SERVICES
           </li>
-          <li className="py-1 hover:text-black cursor-pointer" onClick={() => handleNavigation("about-section")}>
-            ABOUT
+          <li className="py-1 hover:text-black cursor-pointer" onClick={() => navigate("/blog")}>
+            BLOG
           </li>
-          <li className="py-1 hover:text-black cursor-pointer" onClick={() => handleNavigation("contact-section")}>
+          <li className="py-1 hover:text-black cursor-pointer" onClick={() => navigate("/contact")}>
             CONTACT
           </li>
         </ul>

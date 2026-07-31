@@ -56,8 +56,7 @@ const Footer = () => {
           <p className="text-xl font-medium mb-2">COMPANY</p>
           <ul className="flex flex-col gap-1 text-gray-600">
             <li onClick={() => handleNavigation("home-section")} className="cursor-pointer">Home</li>
-            <li onClick={() => handleNavigation("about-section")} className="cursor-pointer">About</li>
-            <li className="cursor-pointer">Blog</li>
+            <li onClick={() => navigate("/blog")} className="cursor-pointer">Blog</li>
             <li className="cursor-pointer">Privacy Policy</li>
           </ul>
         </div>

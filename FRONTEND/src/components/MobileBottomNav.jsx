@@ -1,19 +1,26 @@
-import { Home, LayoutGrid, CalendarDays, Info, Phone } from "lucide-react";
+import { Home, LayoutGrid, CalendarDays, Phone, User } from "lucide-react";
+import { useContext } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { AppointmentContext } from "../context/salonContext";
 
 const items = [
   { id: "home", label: "Home", icon: Home, path: "/", section: "home-section" },
   { id: "services", label: "Services", icon: LayoutGrid, path: "/", section: "services-section" },
   { id: "book", label: "Book", icon: CalendarDays, path: "/", section: "appointment-section", prominent: true },
-  { id: "about", label: "About", icon: Info, path: "/about" },
   { id: "contact", label: "Contact", icon: Phone, path: "/contact" },
+  { id: "account", label: "Account", icon: User, path: "/my-appointments" },
 ];
 
 const MobileBottomNav = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { token } = useContext(AppointmentContext);
 
   const go = (item) => {
+    if (item.id === "account") {
+      navigate(token ? "/my-appointments" : "/login");
+      return;
+    }
     if (item.path === "/" && item.section) {
       if (location.pathname !== "/") {
         navigate("/");
@@ -30,17 +37,17 @@ const MobileBottomNav = () => {
 
   const isActive = (item) => {
     if (item.id === "home") return location.pathname === "/";
-    if (item.id === "book") {
-      return location.pathname === "/appointment";
+    if (item.id === "book") return location.pathname === "/appointment";
+    if (item.id === "contact") return location.pathname === "/contact";
+    if (item.id === "account") {
+      return location.pathname === "/my-appointments" || location.pathname === "/login";
     }
-    if (item.path === "/about") return location.pathname === "/about";
-    if (item.path === "/contact") return location.pathname === "/contact";
     return false;
   };
 
   return (
     <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 bg-white border-t border-gray-100 pb-[env(safe-area-inset-bottom)]">
-      <ul className="flex items-end justify-between px-3 pt-2 pb-2 max-w-lg mx-auto">
+      <ul className="flex items-end justify-between px-2 pt-2 pb-2 max-w-lg mx-auto">
         {items.map((item) => {
           const Icon = item.icon;
           const active = isActive(item);
@@ -68,7 +75,7 @@ const MobileBottomNav = () => {
               <button
                 type="button"
                 onClick={() => go(item)}
-                className={`flex flex-col items-center gap-1 min-w-[56px] ${
+                className={`flex flex-col items-center gap-1 min-w-[52px] ${
                   active ? "text-primary" : "text-gray-400"
                 }`}
               >
