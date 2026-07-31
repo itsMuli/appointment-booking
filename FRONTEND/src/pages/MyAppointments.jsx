@@ -5,6 +5,7 @@ import { AppointmentContext } from '../context/salonContext';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import Modal from '../components/Modal';
+import { API_URL } from '../config';
 
 const MyAppointments = () => {
   const {
@@ -15,7 +16,6 @@ const MyAppointments = () => {
     user,
     setUser,
   } = useContext(AppointmentContext);
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
   // Ensure user profile is available (fallback if context hasn't populated yet)
   useEffect(() => {
     if (!user && contextToken) {

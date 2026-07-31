@@ -5,8 +5,7 @@ import { toast } from "react-toastify";
 import { AlertCircle } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
 import PasswordInput from '../components/PasswordInput';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import { API_URL } from '../config';
 
 const api = axios.create({
   baseURL: API_URL,

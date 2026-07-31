@@ -12,6 +12,7 @@ import { isMonday, isPast, format } from "date-fns";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import Modal from "../components/Modal";
+import { API_URL } from "../config";
 
 const steps = [
   { id: "service", label: "Service", icon: ClipboardList },
@@ -60,8 +61,6 @@ const Appointment = () => {
     user,
     error: dataError,
   } = useContext(AppointmentContext);
-  // eslint-disable-next-line no-unused-vars
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
    const resetLocalState = () => {
     setSelectedCategory(categories[0]?.name || "");
     setSelectedService(null);

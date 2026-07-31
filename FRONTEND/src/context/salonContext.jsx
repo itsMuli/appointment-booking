@@ -1,5 +1,6 @@
 import { createContext, useState, useEffect } from "react";
 import axios from 'axios';
+import { API_URL } from '../config';
 
 export const AppointmentContext = createContext(
   null
@@ -9,7 +10,6 @@ export const AppointmentContext = createContext(
 
 // eslint-disable-next-line react/prop-types
 export const AppointmentProvider = ({ children }) => {
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   const [currentStep, setCurrentStep] = useState(0);
   const [isBooked, setIsBooked] = useState(false);

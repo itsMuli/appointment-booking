@@ -4,10 +4,10 @@ import { debounce } from 'lodash';
 import { AppointmentContext } from '../context/salonContext';
 import axios from 'axios';
 import Modal from '../components/Modal';
+import { API_URL } from '../config';
 
 const Contact = () => {
   const { token: contextToken } = useContext(AppointmentContext);
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredAppointments, setFilteredAppointments] = useState([]);
   const [dateRange, setDateRange] = useState({ start: "", end: "" });
