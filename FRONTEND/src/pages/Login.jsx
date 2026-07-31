@@ -10,7 +10,8 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const api = axios.create({
   baseURL: API_URL,
-  timeout: 5000,
+  // Render free tier can take 30–60s on cold start
+  timeout: 60000,
   headers: {
     'Content-Type': 'application/json'
   }
@@ -69,7 +70,14 @@ const onSubmitHandler = async (event) => {
       throw new Error(response.data.message || 'Authentication failed');
     } 
   } catch (error) {
-    const errorMessage = error.response?.data?.message || error.message || 'An error occurred';
+    let errorMessage = error.response?.data?.message || error.message || 'An error occurred';
+    if (error.code === 'ECONNABORTED' || /timeout/i.test(errorMessage)) {
+      errorMessage =
+        'Server took too long to respond. The backend may be waking up — please try again in a moment.';
+    } else if (error.message === 'Network Error') {
+      errorMessage =
+        'Cannot reach the server. Check that the backend is running and VITE_API_URL is correct.';
+    }
     setError(errorMessage);
     toast.error(errorMessage);
   } finally {
