@@ -10,10 +10,11 @@ import Services from './pages/Services';
 import Footer from './components/Footer';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import MobileBottomNav from './components/MobileBottomNav';
 
 const App = () => {
   return (
-    <div className="mx-2 sm:mx-[4%] md:mx-[6%] lg:mx-[7%] xl:mx-[18%]"> 
+    <div className="mx-3 sm:mx-[4%] md:mx-[6%] lg:mx-[7%] xl:mx-[18%] pb-24 md:pb-0"> 
       <Navbar/>
       <Routes>
         <Route path='/' element={<Home/>}/>
@@ -27,6 +28,7 @@ const App = () => {
         <Route path='/appointment' element={<Appointment/>}/>
         <Route path='/footer' element={<Footer/>}/>
       </Routes>
+      <MobileBottomNav />
     </div>
   )
 }

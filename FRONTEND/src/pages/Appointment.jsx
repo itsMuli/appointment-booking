@@ -15,10 +15,10 @@ import Modal from "../components/Modal";
 import { API_URL } from "../config";
 
 const steps = [
-  { id: "service", label: "Service", icon: ClipboardList },
-  { id: "datetime", label: "Date & Time", icon: Calendar },
-  { id: "details", label: "Fill out your details", icon: PenBoxIcon },
-  { id: "summary", label: "Summary", icon: FileText },
+  { id: "service", label: "Service", shortLabel: "Service", icon: ClipboardList },
+  { id: "datetime", label: "Date & Time", shortLabel: "Date & Time", icon: Calendar },
+  { id: "details", label: "Fill out your details", shortLabel: "Your Details", icon: PenBoxIcon },
+  { id: "summary", label: "Summary", shortLabel: "Summary", icon: FileText },
 ];
 
 const timeSlots = [
@@ -234,7 +234,24 @@ const Appointment = () => {
       case 0:
         return (
           <div className="space-y-6">
-            <div>
+            <div className="md:hidden mb-3">
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {categories.map((category, index) => (
+                  <button
+                    key={`m-category-${category._id || index}`}
+                    onClick={() => handleCategorySelect(category)}
+                    className={`flex-shrink-0 text-xs px-3 py-1.5 rounded-full border ${
+                      selectedCategory === category.name
+                        ? "border-primary bg-primary text-white"
+                        : "border-gray-200 bg-white text-gray-600"
+                    }`}
+                  >
+                    {category.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="hidden md:block">
               <h2 className="text-gray-600 font-semibold mb-3">
                 Category
               </h2>
@@ -256,10 +273,10 @@ const Appointment = () => {
             </div>
 
             <div>
-              <h2 className="text-gray-600 font-semibold mb-3">
+              <h2 className="text-gray-600 font-semibold mb-3 hidden md:block">
                 Service
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-3 md:gap-4">
                 {displayedServices.length === 0 ? (
                   <p className="text-gray-500 col-span-full text-sm">
                     No services available yet. If this is the live site, the backend may be unable to reach the database.
@@ -269,24 +286,22 @@ const Appointment = () => {
                   <div
                     key={`service-${service._id || index}`}
                     onClick={() => handleServiceSelect(service)}
-                    className={`cursor-pointer p-4 rounded-md border ${
+                    className={`cursor-pointer p-4 rounded-xl md:rounded-md border bg-white ${
                       selectedService?._id === service._id
-                        ? "border-primary text-white"
-                        : "border-gray-200 bg-white"
+                        ? "border-primary ring-1 ring-primary"
+                        : "border-gray-100 shadow-sm md:shadow-none md:border-gray-200"
                     }`}
                   >
-                    <div className="text-left">
-                      <h3 className="font-medium text-gray-800">
-                        {service.name}
-                      </h3>
-                      <div className="flex justify-between mt-2 text-sm text-gray-600">
-                        <div className="flex items-center">
-                          <span>{service.duration}</span>
-                        </div>
-                        <div className="flex items-center p-1 text-white bg-primary rounded">
-                          <span>Ksh</span>
-                          <span className="ml-1 ">{service.price}</span>
-                        </div>
+                    <div className="text-left flex items-center justify-between gap-3">
+                      <div>
+                        <h3 className="font-semibold text-gray-800">
+                          {service.name}
+                        </h3>
+                        <p className="text-sm text-gray-500 mt-1">{service.duration}</p>
+                      </div>
+                      <div className="flex items-center px-2.5 py-1.5 text-white bg-primary rounded-lg text-sm whitespace-nowrap">
+                        <span>Ksh</span>
+                        <span className="ml-1">{service.price}</span>
                       </div>
                     </div>
                   </div>
@@ -740,7 +755,7 @@ const Appointment = () => {
   }, [user]);
 
   return (
-    <div className="my-4" id="appointment-section">
+    <div className="my-4 md:my-4 pb-4" id="appointment-section">
       {isBooked && <BookingSuccessModal />}
       <Modal
         open={feedbackModal.open}
@@ -751,42 +766,45 @@ const Appointment = () => {
         onClose={closeFeedback}
         onConfirm={closeFeedback}
       />
-      <div className="text-center text-2xl py-8">
+      <div className="text-center text-2xl py-4 md:py-8">
         <Title text1={"BOOK"} text2={"APPONTMENT"} />
       </div>
       {dataError && (
-        <div className="mx-4 lg:mx-8 xl:mx-12 mb-4 p-3 rounded-md bg-red-50 text-red-700 text-sm">
+        <div className="mx-1 md:mx-4 lg:mx-8 xl:mx-12 mb-4 p-3 rounded-md bg-red-50 text-red-700 text-sm">
           {dataError}
         </div>
       )}
 
-      <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 px-4 lg:px-8 xl:px-12 min-h-[400px] bg-stone-100 rounded-lg">
-      <nav className="w-full lg:w-1/5 mb-4">
-        <div className="bg-white shadow-md rounded mt-6">
-          <ul className="flex lg:block gap-2 overflow-x-auto lg:overflow-visible p-2">
+      <div className="flex flex-col lg:flex-row gap-3 lg:gap-6 px-0 md:px-4 lg:px-8 xl:px-12 min-h-[320px] md:min-h-[400px] bg-transparent md:bg-stone-100 rounded-lg">
+      {/* Mobile horizontal stepper */}
+      <nav className="w-full lg:w-1/5 mb-2 md:mb-4">
+        <div className="bg-transparent md:bg-white md:shadow-md md:rounded mt-0 md:mt-6">
+          <ul className="flex lg:block gap-1 md:gap-2 overflow-x-auto lg:overflow-visible p-1 md:p-2 justify-between md:justify-start">
             {steps.map((step, index) => {
               const Icon = step.icon;
+              const active = currentStep === index;
               return (
-                <li key={step.id} className="flex-shrink-0">
+                <li key={step.id} className="flex-1 md:flex-shrink-0 min-w-0">
                   <button
                     onClick={() =>
                       canNavigateToStep(index) && setCurrentStep(index)
                     }
                     disabled={!canNavigateToStep(index)}
-                    className={`flex items-center w-full space-x-2 p-3 rounded-md mb-2 transition-colors ${
-                      currentStep === index
-                        ? "bg-white text-primary"
-                        : "text-gray-700"
+                    className={`flex flex-col md:flex-row items-center justify-center md:justify-start w-full gap-1 md:gap-2 p-2 md:p-3 rounded-md mb-0 md:mb-2 transition-colors ${
+                      active
+                        ? "text-primary"
+                        : "text-gray-400 md:text-gray-700"
                     } ${
                       !canNavigateToStep(index)
                         ? "opacity-50 cursor-not-allowed"
                         : ""
                     }`}
                   >
-                    <div className="flex items-center gap-2">
-                      <Icon className="w-5 h-5" />
-                      <span className="font-light whitespace-nowrap">{step.label}</span>
-                    </div>
+                    <Icon className={`w-5 h-5 ${active ? "text-primary" : ""}`} />
+                    <span className="font-medium md:font-light text-[10px] md:text-sm text-center md:text-left whitespace-nowrap truncate max-w-full">
+                      <span className="md:hidden">{step.shortLabel}</span>
+                      <span className="hidden md:inline">{step.label}</span>
+                    </span>
                   </button>
                 </li>
               );
@@ -795,16 +813,16 @@ const Appointment = () => {
         </div>
       </nav>     
 
-        <main className="w-full md:w- p-8 mb-4 mt-6 bg-white">
-          <div className="h-[400px] overflow-y-auto">{renderStepContent()}</div>
+        <main className="w-full p-3 md:p-8 mb-4 mt-2 md:mt-6 bg-white rounded-2xl md:rounded-none shadow-sm md:shadow-none">
+          <div className="min-h-[280px] md:h-[400px] md:overflow-y-auto">{renderStepContent()}</div>
 
           <hr className="mt-3" />
 
-          <div className="mt-8 flex justify-between">
+          <div className="mt-6 md:mt-8 flex justify-between gap-3">
             {currentStep > 0 && (
               <button
                 onClick={() => setCurrentStep((prev) => prev - 1)}
-                className="text-gray-700 font-serif px-6 py-2 rounded-md hover:bg-gray-400 transition-colors duration-200 "
+                className="text-gray-700 font-serif px-5 py-2.5 rounded-xl md:rounded-md hover:bg-gray-100 transition-colors duration-200 "
               >
                 ← Back
               </button>
@@ -817,14 +835,14 @@ const Appointment = () => {
                   setCurrentStep((prev) => prev + 1)
                 }
                 disabled={!isStepComplete(currentStep)}
-                className="bg-primary text-white font-serif px-6 py-2 rounded-md hover:bg-primary-dark transition-colors duration-200 ml-auto disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-primary text-white font-serif px-6 py-2.5 rounded-xl md:rounded-md hover:bg-primary-dark transition-colors duration-200 ml-auto disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Next →
               </button>
             ) : (
               <button
                 onClick={handleBookAppointment}
-                className="bg-primary text-white px-6 py-2 rounded-md hover:bg-primary-dark transition-colors duration-200 ml-auto"
+                className="bg-primary text-white px-6 py-2.5 rounded-xl md:rounded-md hover:bg-primary-dark transition-colors duration-200 ml-auto"
               >
                 Book Appointment
               </button>
