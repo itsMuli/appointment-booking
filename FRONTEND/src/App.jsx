@@ -8,17 +8,19 @@ import Appointment from './pages/Appointment';
 import Navbar from './components/Navbar';
 import Services from './pages/Services';
 import Footer from './components/Footer';
-import AppointmentProvider from './context/salonContext';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 const App = () => {
   return (
-    <AppointmentProvider>
-    <div className="mx-2 sm:mx-[5%] md:mx-[7%] lg:mx-[8%] xl:mx-[20%]"> 
+    <div className="mx-2 sm:mx-[4%] md:mx-[6%] lg:mx-[7%] xl:mx-[18%]"> 
       <Navbar/>
       <Routes>
         <Route path='/' element={<Home/>}/>
         <Route path='/services' element={<Services/>}/>
         <Route path='/login' element={<Login/>}/>
+        <Route path='/forgot-password' element={<ForgotPassword/>}/>
+        <Route path='/reset-password' element={<ResetPassword/>}/>
         <Route path='/about' element={<About/>}/>
         <Route path='/contact' element={<Contact/>}/>
         <Route path='/my-appointments' element={<MyAppointments/>}/>
@@ -26,7 +28,6 @@ const App = () => {
         <Route path='/footer' element={<Footer/>}/>
       </Routes>
     </div>
-    </AppointmentProvider>
   )
 }
 

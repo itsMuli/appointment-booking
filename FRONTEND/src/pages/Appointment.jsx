@@ -1,6 +1,5 @@
 import { useState, useEffect, useContext } from "react";
 import {
-  Users,
   ClipboardList,
   Calendar,
   FileText,
@@ -12,9 +11,9 @@ import { AppointmentContext } from "../context/salonContext";
 import { isMonday, isPast, format } from "date-fns";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import Modal from "../components/Modal";
 
 const steps = [
-  { id: "artist", label: "Artist", icon: Users },
   { id: "service", label: "Service", icon: ClipboardList },
   { id: "datetime", label: "Date & Time", icon: Calendar },
   { id: "details", label: "Fill out your details", icon: PenBoxIcon },
@@ -41,6 +40,7 @@ const Appointment = () => {
   const navigate = useNavigate()
   const [isBooked, setIsBooked] = useState(false);
   const [bookingId, setBookingId] = useState(null);
+  const [confirmation, setConfirmation] = useState(null);
   const {
     formData,
     updateFormData,
@@ -56,7 +56,8 @@ const Appointment = () => {
     fetchServices,
     fetchServicesByCategory,
     resetFormData,
-    addAppointment
+    addAppointment,
+    user
   } = useContext(AppointmentContext);
   // eslint-disable-next-line no-unused-vars
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
@@ -75,6 +76,34 @@ const Appointment = () => {
     categories[0]?.name || ""
   );
   const [selectedService, setSelectedService] = useState(null);
+  const [feedbackModal, setFeedbackModal] = useState({
+    open: false,
+    variant: "info",
+    title: "",
+    message: "",
+  });
+
+  const showFeedback = (opts) =>
+    setFeedbackModal({ open: true, variant: "info", title: "", message: "", ...opts });
+  const closeFeedback = () =>
+    setFeedbackModal((prev) => ({ ...prev, open: false }));
+
+  // Single-artist studio: always keep formData.artist in sync with the studio artist
+  useEffect(() => {
+    if (artists.length === 0) return;
+    const studioArtist = artists[0];
+    const currentId = formData.artist?.id || formData.artist?._id;
+    const studioId = studioArtist.id || studioArtist._id;
+    if (
+      !currentId ||
+      currentId !== studioId ||
+      formData.artist?.name !== studioArtist.name
+    ) {
+      updateFormData("artist", studioArtist);
+    }
+  }, [artists]);
+
+  const getSelectedArtist = () => formData.artist || artists[0] || null;
 
   useEffect(() => {
     if (categories[0] && selectedCategory !== categories[0]?.name) {
@@ -88,7 +117,7 @@ const Appointment = () => {
       updateFormData("category", null);
       setSelectedCategory("ALL");
     } else {
-      await fetchServicesByCategory(category._id);
+      await fetchServicesByCategory(category.id);
       updateFormData("category", category);
       setSelectedCategory(category.name);
     }
@@ -98,29 +127,9 @@ const Appointment = () => {
     updateFormData("service", service);
   };
 
-  useEffect(() => {
-    fetchServices();
-  }, []);
-
-  const displayedServices = formData.category ? categoryServices : services;
-
-  const fetchInitialData = async () => {
-    try {
-      const artistResponse = await fetch("/api/artist");
-      const artistData = await artistResponse.json();
-      setArtists(artistData);
-
-      const categoryResponse = await fetch("/api/categories");
-      const categoryData = await categoryResponse.json();
-      setCategories(categoryData);
-
-      const serviceResponse = await fetch("/api/services");
-      const serviceData = await serviceResponse.json();
-      setServices(serviceData);
-    } catch (error) {
-      console.error("Error fetching initial data:", error);
-    }
-  };
+  const displayedServices = (formData.category ? categoryServices : services).filter(
+    (s) => s.price != null && s.category
+  );
 
   useEffect(() => {
     if (formData.category) {
@@ -128,24 +137,21 @@ const Appointment = () => {
     }
   }, [formData.category]);
 
-  useEffect(() => {
-    fetchInitialData();
-  }, []);
-
   const isStepComplete = (stepIndex) => {
-    switch (stepIndex) {
-      case 0:
-        return !!formData.artist;
-      case 1:
-        return !!formData.category && !!formData.service;
-      case 2:
-        return !!formData.date && !!formData.time;
-      case 3:
-        return Object.values(formData.userDetails).every((v) => v);
-      default:
-        return false;
-    }
-  };
+  switch (stepIndex) {
+    case 0:
+      if (selectedCategory === "ALL") {
+        return !!formData.service;
+      }
+      return !!formData.category && !!formData.service;
+    case 1:
+      return !!formData.date && !!formData.time;
+    case 2:
+      return Object.values(formData.userDetails).every((v) => v);
+    default:
+      return false;
+  }
+};
 
   const canNavigateToStep = (stepIndex) => {
     if (stepIndex === 0) return true; // Always allow navigating to the first step
@@ -227,47 +233,6 @@ const Appointment = () => {
     switch (currentStep) {
       case 0:
         return (
-          <div>
-            <h2 className="mb-3 text-gray-600 font-semibold">
-              Select Artist
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {artists.map((artistItem) => {
-                const isSelected = formData.artist?.id === artistItem.id;
-                return (
-                  <button
-                    key={`artist-${artistItem.id}`}
-                    onClick={() => updateFormData("artist", artistItem)}
-                    className={`
-          p-3 rounded-lg transition-colors relative
-          ${isSelected ? "border border-primary" : "border border-gray-200"}
-        `}
-                  >
-                    {isSelected && (
-                      <div className="absolute top-2 right-2 bg-primary rounded-full p-1">
-                        <Check className="w-4 h-4 text-white" />
-                      </div>
-                    )}
-                    <div className="w-16 h-16 mx-auto mb-2 rounded-full bg-gray-100 flex items-center justify-center">
-                      <Users className="w-8 h-8 text-gray-400" />
-                    </div>
-                    <h3 className="text-gray-800 font-medium text-center">
-                      {artistItem.name}
-                    </h3>
-                    {artistItem.email && (
-                      <p className="text-sm text-gray-500 text-center truncate">
-                        {artistItem.email}
-                      </p>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        );
-
-      case 1:
-        return (
           <div className="space-y-6">
             <div>
               <h2 className="text-gray-600 font-semibold mb-3">
@@ -332,7 +297,7 @@ const Appointment = () => {
           </div>
         );
 
-      case 2:
+      case 1:
         return (
           <div className="space-y-6">
             <div className="flex flex-col lg:flex-row gap-6">
@@ -417,7 +382,7 @@ const Appointment = () => {
           </div>
         );
 
-      case 3:
+      case 2:
         return (
           <div className="p-4 border rounded-lg">
             <h2 className="mb-3 font-medium">Fill Your Details</h2>
@@ -454,7 +419,7 @@ const Appointment = () => {
           </div>
         );
 
-      case 4:
+      case 3:
         return (
           <div className="p-4 border rounded-lg">
             <div className="flex justify-center mb-6">
@@ -466,10 +431,12 @@ const Appointment = () => {
               Your appointment booking summary
             </p>
 
-            {/* Customer Details */}
+            {/* Artist (auto-assigned for single-artist studio) */}
             <div className="text-center mb-5">
               <h3 className="font-semibold text-sm text-gray-600">Artist</h3>
-              <p className="text-sm">{formData.artist.name}</p>
+              <p className="text-sm">
+                {formData.artist?.name || artists[0]?.name || "Joan"}
+              </p>
             </div>
 
             {/* Service and Date */}
@@ -559,11 +526,58 @@ const Appointment = () => {
       navigate("/login");
       return;
     }
+
+    const selectedArtist = getSelectedArtist();
+
+    // Validate required fields
+    if (!selectedArtist || !formData.service || !formData.date || !formData.time) {
+      showFeedback({
+        variant: "error",
+        title: "Missing details",
+        message: "Please fill in all required fields before booking.",
+        confirmLabel: "OK",
+      });
+      return;
+    }
+
+    const serviceCategoryId = formData.service.category
+      ? String(formData.service.category)
+      : null;
+    const categoryName =
+      formData.category?.name ||
+      categories.find((c) => c.id === serviceCategoryId)?.name ||
+      "General";
   
     try {
+      // Format data for backend - convert Date to ISO string
+      const appointmentData = {
+        artist: {
+          id: selectedArtist.id || selectedArtist._id,
+          name: selectedArtist.name
+        },
+        service: {
+          name: formData.service.name,
+          price: parseFloat(formData.service.price) || 0
+        },
+        category: {
+          name: categoryName
+        },
+        date: formData.date instanceof Date 
+          ? formData.date.toISOString().split('T')[0] 
+          : formData.date,
+        time: formData.time, // Backend maps this to timeSlot
+        paymentMethod: formData.paymentMethod || 'mpesa',
+        userDetails: {
+          firstname: formData.userDetails.firstname,
+          lastname: formData.userDetails.lastname,
+          email: formData.userDetails.email,
+          phone: formData.userDetails.phone
+        }
+      };
+
       const response = await axios.post(
         `${API_URL}/api/appointment`,
-        formData,
+        appointmentData,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -573,19 +587,32 @@ const Appointment = () => {
       );
   
       if (response.data.success) {
+        // Snapshot details for confirmation screen before clearing state
+        setConfirmation({
+          serviceName: formData.service?.name || response.data?.data?.service?.name || "-",
+          artistName: selectedArtist?.name || response.data?.data?.artist?.name || "-",
+          date: formData.date
+            ? formData.date.toLocaleDateString()
+            : (response.data?.data?.date ? new Date(response.data.data.date).toLocaleDateString() : "-"),
+          time: formData.time || response.data?.data?.timeSlot || "-",
+        });
+
+        // Optionally add to local appointment list for UI
         const newAppointment = {
           id: response.data.data.bookingId,
-          service: formData.service.name,
-          date: formData.date.toLocaleDateString(),
-          duration: formData.service.duration,
+          service: formData.service?.name || response.data?.data?.service?.name,
+          date: formData.date
+            ? formData.date.toLocaleDateString()
+            : (response.data?.data?.date ? new Date(response.data.data.date).toLocaleDateString() : undefined),
+          duration: formData.service?.duration,
           status: "Pending",
-          staff: formData.artist.name,
-          payment: formData.service.price,
+          staff: selectedArtist?.name || response.data?.data?.artist?.name,
+          payment: formData.service?.price,
         };
-  
-        // Add the new appointment to the context
+
+        // Add the new appointment to the context (safe)
         addAppointment(newAppointment);
-  
+
         setBookingId(response.data.data.bookingId);
         setIsBooked(true);
         resetFormData();
@@ -593,75 +620,131 @@ const Appointment = () => {
       }
     } catch (error) {
       console.error("Error booking appointment:", error);
-      // Handle error (show error message to user)
+      const errorMessage = error.response?.data?.error || 
+                          error.response?.data?.message || 
+                          "Failed to book appointment. Please try again.";
+      showFeedback({
+        variant: "error",
+        title: "Booking failed",
+        message: errorMessage,
+        confirmLabel: "OK",
+      });
     }
   };
   
 
-  const BookingConfirmationContent = () => (
-    <div className="max-w-2xl mx-auto">
-      <div className="flex justify-center mb-6">
-        <div className="bg-red-100 p-4 rounded-full">
-          <div className="bg-red-400 rounded-full p-2">
-            <Check className="w-6 h-6 text-white" />
+  const closeSuccessModal = () => {
+    setIsBooked(false);
+    setBookingId(null);
+    setConfirmation(null);
+  };
+
+  const BookingSuccessModal = () => (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="booking-success-title"
+      onClick={closeSuccessModal}
+    >
+      <div
+        className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 sm:p-8"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex justify-center mb-5">
+          <div className="bg-green-100 p-3 rounded-full">
+            <div className="bg-green-500 rounded-full p-2">
+              <Check className="w-6 h-6 text-white" />
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="text-center mb-4">
-        <p className="text-gray-600">
-          Booking ID: <span className="font-semibold">#{bookingId}</span>
-        </p>
-      </div>
-
-      <div className="text-center mb-4">
-        <h2 className="text-2xl font-semibold mb-2">
-          Your Appointment Booked successfully!
+        <h2
+          id="booking-success-title"
+          className="text-center text-xl sm:text-2xl font-semibold text-gray-800 mb-2"
+        >
+          Appointment booked successfully
         </h2>
-        <p className="text-gray-600">
-          We have sent your booking information to your email address.
+        <p className="text-center text-gray-500 text-sm mb-1">
+          Booking ID: <span className="font-semibold text-gray-700">#{bookingId}</span>
         </p>
-      </div>
+        <p className="text-center text-gray-500 text-sm mb-6">
+          We look forward to seeing you.
+        </p>
 
-      <div className="bg-white p-6 rounded-lg shadow-sm mb-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="text-center">
-            <p className="text-gray-600 mb-1">Service:</p>
-            <p className="font-semibold">{formData.service?.name}</p>
+        <div className="bg-stone-50 rounded-lg p-4 mb-6 space-y-3 text-sm">
+          <div className="flex justify-between gap-4">
+            <span className="text-gray-500">Service</span>
+            <span className="font-medium text-gray-800 text-right">
+              {confirmation?.serviceName || "-"}
+            </span>
           </div>
-          <div className="text-center">
-            <p className="text-gray-600 mb-1">Date & Time:</p>
-            <p className="font-semibold">
-              {formData.date?.toLocaleDateString()}
-            </p>
-            <p className="font-semibold">{formData.time}</p>
+          <div className="flex justify-between gap-4">
+            <span className="text-gray-500">Date & Time</span>
+            <span className="font-medium text-gray-800 text-right">
+              {confirmation?.date || "-"}
+              {confirmation?.time ? ` · ${confirmation.time}` : ""}
+            </span>
           </div>
-          <div className="text-center">
-            <p className="text-gray-600 mb-1">Artist:</p>
-            <p className="font-semibold">{formData.artist.name}</p>
+          <div className="flex justify-between gap-4">
+            <span className="text-gray-500">Artist</span>
+            <span className="font-medium text-gray-800 text-right">
+              {confirmation?.artistName || "-"}
+            </span>
           </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3">
+          <button
+            type="button"
+            onClick={closeSuccessModal}
+            className="flex-1 px-4 py-2.5 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            Book another
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate("/my-appointments")}
+            className="flex-1 px-4 py-2.5 rounded-md bg-primary text-white hover:opacity-90 transition-colors"
+          >
+            My appointments
+          </button>
         </div>
       </div>
     </div>
   );
 
-  if (isBooked) {
-    return (
-      <div className="my-4" id="appointment-section">
-        <div className="text-center text-2xl py-8">
-          <Title text1={"BOOKING"} text2={"CONFIRMED"} />
-        </div>
-        <div className="px-4 md:px-8 lg:px-12 xl:px-8">
-          <div className="bg-white p-8 rounded-lg">
-            <BookingConfirmationContent />
-          </div>
-        </div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    // If a user is logged in and the form's userDetails are empty, prefill name/email
+    if (user && formData && formData.userDetails) {
+      const details = formData.userDetails || {};
+      const isEmpty = !details.firstname && !details.lastname && !details.email && !details.phone;
+      if (isEmpty) {
+        const nameParts = (user.name || '').split(' ');
+        const firstname = nameParts[0] || '';
+        const lastname = nameParts.slice(1).join(' ') || '';
+        updateFormData('userDetails', {
+          ...details,
+          firstname,
+          lastname,
+          email: user.email || details.email
+        });
+      }
+    }
+  }, [user]);
 
   return (
     <div className="my-4" id="appointment-section">
+      {isBooked && <BookingSuccessModal />}
+      <Modal
+        open={feedbackModal.open}
+        variant={feedbackModal.variant}
+        title={feedbackModal.title}
+        message={feedbackModal.message}
+        confirmLabel={feedbackModal.confirmLabel || "OK"}
+        onClose={closeFeedback}
+        onConfirm={closeFeedback}
+      />
       <div className="text-center text-2xl py-8">
         <Title text1={"BOOK"} text2={"APPONTMENT"} />
       </div>

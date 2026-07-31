@@ -4,6 +4,7 @@ import axios from 'axios';
 import { toast } from "react-toastify";
 import { AlertCircle } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
+import PasswordInput from '../components/PasswordInput';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -16,8 +17,7 @@ const api = axios.create({
 });
 
 const Login = () => {
-  // eslint-disable-next-line no-unused-vars
-  const { token, setToken, setUser } = useContext(AppointmentContext);
+  const { setToken, setUser } = useContext(AppointmentContext);
   const navigate = useNavigate();
   const [currentState, setCurrentState] = useState("Login");
   const [formData, setFormData] = useState({
@@ -54,12 +54,14 @@ const onSubmitHandler = async (event) => {
     if (response && response.data.success) {
       if (currentState === 'Sign Up') {
         toast.success('Successfully signed up! Please login to continue.');
+        // Notify other admin/dashboard windows to refresh user list
+        try { localStorage.setItem('userRegistered', '1'); } catch (e) {}
         setCurrentState("Login");
         setFormData({ name: '', email: '', password: '' });
       } else {
         setToken(response.data.token);
         setUser(response.data.user); // Assuming the API returns user details
-        localStorage.setItem('token', response.data.token);
+        try { localStorage.setItem('token', response.data.token); } catch (e) {}
         toast.success('Successfully logged in!');
         navigate('/'); 
       }
@@ -119,19 +121,17 @@ const onSubmitHandler = async (event) => {
           </div>
 
           <div className="mb-6">
-            <input
+            <PasswordInput
               name="password"
               onChange={handleInputChange}
               value={formData.password}
-              type="password"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               placeholder="Password"
               required
             />
           </div>
 
           <div className="flex items-center justify-between mb-6 text-sm">
-            <button type="button" className="text-primary hover:text-primary">
+            <button type="button" className="text-primary hover:text-primary" onClick={() => navigate('/forgot-password')}>
               Forgot Password?
             </button>
             <button

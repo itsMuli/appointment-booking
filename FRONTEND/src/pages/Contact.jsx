@@ -3,48 +3,33 @@ import { Search, Trash2 } from 'lucide-react';
 import { debounce } from 'lodash';
 import { AppointmentContext } from '../context/salonContext';
 import axios from 'axios';
+import Modal from '../components/Modal';
 
-const SearchDemo = () => {
-  const {token: contextToken, setToken: setContextToken} = useContext(AppointmentContext)
+const Contact = () => {
+  const { token: contextToken } = useContext(AppointmentContext);
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredAppointments, setFilteredAppointments] = useState([]);
   const [dateRange, setDateRange] = useState({ start: "", end: "" });
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [modal, setModal] = useState({ open: false, variant: "info", title: "", message: "" });
+  const [pendingDeleteId, setPendingDeleteId] = useState(null);
 
-  // Fetch appointments from the backend
-  useEffect(() => {
-    const fetchAppointments = async () => {
-      if (!contextToken) return;
-      try {
-        const response = await axios.get("http://localhost:5000/api/appointment/my-appointments", {
-          headers: {
-            Authorization: `Bearer ${contextToken}`, // Ensure this is the correct token
-          },
-        });
-        setAppointments(response.data.data);
-        setLoading(false)
-      } catch (err) {
-        console.error(
-          "Error fetching appointments:",
-          err.response?.data?.error || err.message
-        );
-        setLoading(false)
-      }
-    };
+  const closeModal = () => {
+    setModal((prev) => ({ ...prev, open: false }));
+    setPendingDeleteId(null);
+  };
 
-    if (contextToken) {
-      fetchAppointments();
-    }
-  }, [contextToken]);
+  const showModal = (opts) => setModal({ open: true, variant: "info", title: "", message: "", ...opts });
 
-  const debouncedSearch = debounce((query, dateRange) => {
-    let filtered = [...appointments];
+  const applyFilters = (list, query, range) => {
+    let filtered = [...list];
 
-    if (dateRange.start && dateRange.end) {
-      const startDate = new Date(dateRange.start);
-      const endDate = new Date(dateRange.end);
+    if (range.start && range.end) {
+      const startDate = new Date(range.start);
+      const endDate = new Date(range.end);
       filtered = filtered.filter((appointment) => {
         const appointmentDate = new Date(appointment.date);
         return appointmentDate >= startDate && appointmentDate <= endDate;
@@ -62,59 +47,125 @@ const SearchDemo = () => {
       );
     }
 
-    setFilteredAppointments(filtered);
+    return filtered;
+  };
+
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      if (!contextToken) return;
+      try {
+        const response = await axios.get(`${API_URL}/api/appointment/my-appointments`, {
+          headers: {
+            Authorization: `Bearer ${contextToken}`,
+          },
+        });
+        const data = response.data.data || [];
+        setAppointments(data);
+        setFilteredAppointments(data);
+        setLoading(false);
+      } catch (err) {
+        console.error(
+          "Error fetching appointments:",
+          err.response?.data?.error || err.message
+        );
+        setError(err.response?.data?.message || err.message);
+        setLoading(false);
+      }
+    };
+
+    if (contextToken) {
+      fetchAppointments();
+    }
+  }, [contextToken, API_URL]);
+
+  const debouncedSearch = debounce((query, range, list) => {
+    setFilteredAppointments(applyFilters(list, query, range));
   }, 300);
 
   const handleSearchChange = (e) => {
     const newQuery = e.target.value;
     setSearchQuery(newQuery);
-    debouncedSearch(newQuery, dateRange);
+    debouncedSearch(newQuery, dateRange, appointments);
   };
 
   const handleSearch = () => {
-    debouncedSearch(searchQuery, dateRange);
+    setFilteredAppointments(applyFilters(appointments, searchQuery, dateRange));
   };
-  
 
-  if (loading) {
-    return <div>Loading...</div>;
-  }
+  const removeAppointmentLocally = (appointmentId) => {
+    const id = String(appointmentId);
+    setAppointments((prev) => {
+      const next = prev.filter((app) => String(app._id) !== id);
+      setFilteredAppointments(applyFilters(next, searchQuery, dateRange));
+      return next;
+    });
+  };
 
-  if (error) {
-    return <div>Error: {error.message}</div>;
-  }
+  const requestDeleteAppointment = (appointmentId) => {
+    setPendingDeleteId(appointmentId);
+    showModal({
+      variant: "confirm",
+      title: "Delete appointment?",
+      message: "Are you sure you want to delete this appointment? This cannot be undone.",
+      confirmLabel: "Delete",
+    });
+  };
 
-  const handleDeleteAppointment = async (appointmentId) => {
-    console.log("Deleting appointment with ID:", appointmentId);
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this appointment?"
-    );
-    if (!confirmDelete) return;
+  const confirmDeleteAppointment = async () => {
+    const appointmentId = pendingDeleteId;
+    if (!appointmentId) return;
+    setPendingDeleteId(null);
+    setModal((prev) => ({ ...prev, open: false }));
 
     try {
-      const response = await axios.delete(`/api/appointment/${appointmentId}`, {
+      const response = await axios.delete(`${API_URL}/api/appointment/${appointmentId}`, {
         headers: {
           Authorization: `Bearer ${contextToken}`,
         },
       });
 
       if (response.status === 200) {
-        setAppointments((prev) =>
-          prev.filter((app) => app._id !== appointmentId)
-        );
-        alert("Appointment deleted successfully");
+        removeAppointmentLocally(appointmentId);
+        showModal({
+          variant: "success",
+          title: "Appointment deleted",
+          message: "The appointment was removed successfully.",
+          confirmLabel: "OK",
+        });
       }
     } catch (error) {
       console.error(
         "Error deleting appointment:",
         error.response?.data?.message || error.message
       );
-      alert("Failed to delete appointment");
+      showModal({
+        variant: "error",
+        title: "Delete failed",
+        message: error.response?.data?.message || "Failed to delete appointment.",
+        confirmLabel: "OK",
+      });
     }
   };
 
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>Error: {String(error)}</div>;
+  }
+
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
+      <Modal
+        open={modal.open}
+        variant={modal.variant}
+        title={modal.title}
+        message={modal.message}
+        confirmLabel={modal.confirmLabel || (modal.variant === "confirm" ? "Delete" : "OK")}
+        onClose={closeModal}
+        onConfirm={modal.variant === "confirm" ? confirmDeleteAppointment : closeModal}
+      />
       <h2 className="text-xl font-bold mb-4">My Bookings</h2>
       
       <div className="flex flex-col md:flex-row gap-4 mb-8">
@@ -155,7 +206,7 @@ const SearchDemo = () => {
 
         <div className="flex-1">
             <button
-              onClick={() => handleSearch(searchQuery)}
+              onClick={handleSearch}
               className="w-24 p-2 border bg-primary text-white rounded-lg"
             >
               Apply
@@ -204,7 +255,7 @@ const SearchDemo = () => {
                 <td className="py-4 px-4">Ksh {appointment.service?.price}</td>
                 <td className="py-4 px-4">
                       <button
-                        onClick={() => handleDeleteAppointment(appointment._id)}
+                        onClick={() => requestDeleteAppointment(appointment._id)}
                       >
                         <Trash2 className="text-red-400 hover:text-red-500 cursor-pointer" />
                       </button>
@@ -218,4 +269,4 @@ const SearchDemo = () => {
   );
 };
 
-export default SearchDemo;
+export default Contact;

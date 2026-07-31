@@ -1,4 +1,5 @@
 import { createContext, useState, useEffect } from "react";
+import axios from 'axios';
 
 export const AppointmentContext = createContext(
   null
@@ -8,7 +9,7 @@ export const AppointmentContext = createContext(
 
 // eslint-disable-next-line react/prop-types
 export const AppointmentProvider = ({ children }) => {
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   const [currentStep, setCurrentStep] = useState(0);
   const [isBooked, setIsBooked] = useState(false);
@@ -17,6 +18,34 @@ export const AppointmentProvider = ({ children }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [token, setToken] = useState(localStorage.getItem("token") || null);
   const [user, setUser] = useState(null)
+
+  // When token changes, fetch the real user profile and keep it in context
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (!token) {
+        setUser(null);
+        return;
+      }
+
+      try {
+        const res = await axios.get(`${API_URL}/api/user/user`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        // backend returns { success: true, user: { ... } }
+        setUser(res.data.user || null);
+      } catch (err) {
+        console.error('Failed to fetch user profile:', err.response?.data || err.message);
+        // If token invalid/expired, clear it
+        if (err.response?.status === 401) {
+          try { localStorage.removeItem('token'); } catch (removeErr) { console.error('Failed to remove token from localStorage', removeErr); }
+          setToken(null);
+        }
+        setUser(null);
+      }
+    };
+
+    fetchUserProfile();
+  }, [token, API_URL]);
 
   const [categories, setCategories] = useState([]);
   const [services, setServices] = useState([]);
@@ -29,12 +58,6 @@ export const AppointmentProvider = ({ children }) => {
     return savedAppointments ? JSON.parse(savedAppointments) : [];
   });
 
-  useEffect(() => {
-    if (token) {
-      setUser({ name: "Jane Doe" });
-    }
-  }, [token]);
-
   const [formData, setFormData] = useState({
     artist: null,
     category: null,
@@ -45,114 +68,63 @@ export const AppointmentProvider = ({ children }) => {
     paymentMethod: "cash",
   });
 
+  const fetchArtists = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/artist`);
+      const data = await response.json();
+      if (data.success && data.artists) {
+        setArtists(data.artists);
+      } else if (Array.isArray(data)) {
+        // Backward compatibility: handle direct array response
+        setArtists(data);
+      }
+    } catch (error) {
+      console.error("Error fetching artists:", error);
+    }
+  };
+
   const fetchCategories = async () => {
     try {
-      const categoryResponse = await fetch(`${API_URL}/api/categories`);
-      if (!categoryResponse.ok) {
-        throw new Error("Failed to fetch categories");
+      const response = await fetch(`${API_URL}/api/categories`);
+      const data = await response.json();
+      if (data.success && data.categories) {
+        setCategories(data.categories);
+      } else if (Array.isArray(data)) {
+        // Backward compatibility: handle direct array response
+        setCategories(data);
       }
-      const categoryData = await categoryResponse.json();
-      setCategories(categoryData);
     } catch (error) {
-      setError("Error fetching categories: " + error.message);
+      console.error("Error fetching categories:", error);
     }
   };
 
   const fetchServices = async () => {
     try {
-      const serviceResponse = await fetch(`${API_URL}/api/services`);
-      if (!serviceResponse.ok) {
-        throw new Error(`HTTP error! status: ${serviceResponse.status}`);
+      const response = await fetch(`${API_URL}/api/services`);
+      const data = await response.json();
+      if (data.success && data.services) {
+        setServices(data.services);
+      } else if (Array.isArray(data)) {
+        // Backward compatibility: handle direct array response
+        setServices(data);
       }
-      const serviceData = await serviceResponse.json();
-      setServices(serviceData);
-      return serviceData;
     } catch (error) {
       console.error("Error fetching services:", error);
-      setError("Error fetching services: " + error.message);
-      return [];
     }
   };
 
-  const fetchServicesByCategory = async (category) => {
+  const fetchServicesByCategory = async (categoryId) => {
     try {
-      // Check for valid category
-      if (!category) {
-        console.error("Invalid category:", category);
-        setError("Invalid category ID");
-        return [];
+      const response = await fetch(`${API_URL}/api/services/category/${categoryId}`);
+      const data = await response.json();
+      if (data.success && data.services) {
+        setCategoryServices(data.services);
+      } else if (Array.isArray(data)) {
+        // Backward compatibility: handle direct array response
+        setCategoryServices(data);
       }
-
-      // If services are already loaded, filter locally first
-      if (services.length > 0) {
-        const filteredServices =
-          category === "all"
-            ? services
-            : services.filter((service) => service.category === category);
-
-        // Only update state if we found matching services
-        if (filteredServices.length > 0) {
-          setCategoryServices(filteredServices);
-          return filteredServices;
-        }
-      }
-
-      // If no local services match, fetch from API
-      const response = await fetch(
-        `${API_URL}/api/categories/category/${category}`
-      );
-
-      // Check for network errors or non-200 responses
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Full error response:", errorText);
-        throw new Error(
-          `Failed to fetch services for category ${category}. Status: ${response.status}`
-        );
-      }
-
-      const allServices = await response.json();
-
-      // Ensure the response contains an array of services
-      if (!Array.isArray(allServices)) {
-        console.error(
-          "Expected an array of services, but received:",
-          allServices
-        );
-        setError("Invalid data received from the server.");
-        return [];
-      }
-
-      // Update services state if necessary (optional)
-      setServices(allServices);
-
-      // Filter services by category
-      const filteredServices =
-        category === "all"
-          ? allServices
-          : allServices.filter((service) => service.category === category);
-
-      // Update category services state
-      setCategoryServices(filteredServices);
-
-      return filteredServices;
     } catch (error) {
-      console.error("Error fetching category services:", error);
-      setError(`Unable to load services: ${error.message}`);
-      return [];
-    }
-  };
-
-  const fetchArtists = async () => {
-    try {
-      const artistResponse = await fetch(`${API_URL}/api/artist`);
-      if (!artistResponse.ok) {
-        throw new Error("Failed to fetch artists");
-      }
-      const artistData = await artistResponse.json();
-      setArtists(artistData);
-    } catch (error) {
-      setError("Error fetching artists: " + error.message);
+      console.error("Error fetching services:", error);
     }
   };
 
@@ -178,10 +150,35 @@ export const AppointmentProvider = ({ children }) => {
           artistsRes.json(),
         ]);
 
-        // Update state
-        setCategories(categoryData);
-        setServices(serviceData);
-        setArtists(artistData);
+        // Update state - extract the data arrays from the API response
+        // Handle both formats: { success: true, data: [...] } or direct array (backward compatibility)
+        if (categoryData.success && categoryData.categories) {
+          setCategories(categoryData.categories);
+        } else if (Array.isArray(categoryData)) {
+          setCategories(categoryData);
+        }
+        
+        if (serviceData.success && serviceData.services) {
+          setServices(serviceData.services);
+        } else if (Array.isArray(serviceData)) {
+          setServices(serviceData);
+        }
+        
+        if (artistData.success && artistData.artists) {
+          setArtists(artistData.artists);
+          if (artistData.artists.length >= 1) {
+            setFormData((prev) =>
+              prev.artist ? prev : { ...prev, artist: artistData.artists[0] }
+            );
+          }
+        } else if (Array.isArray(artistData)) {
+          setArtists(artistData);
+          if (artistData.length >= 1) {
+            setFormData((prev) =>
+              prev.artist ? prev : { ...prev, artist: artistData[0] }
+            );
+          }
+        }
       } catch (error) {
         console.error("Error fetching initial data:", error);
         setError(`Failed to load initial data: ${error.message}`);
@@ -218,14 +215,9 @@ export const AppointmentProvider = ({ children }) => {
     return newAppointment.id;
   };
 
-  const resetBooking = () => {
-    setCurrentStep(0);
-    setIsBooked(false);
-    setBookingId(null);
-    setError(null);
-    setIsSubmitting(false);
+  const resetFormData = () => {
     setFormData({
-      artist: null,
+      artist: artists[0] || null,
       category: null,
       service: null,
       date: null,
@@ -234,6 +226,15 @@ export const AppointmentProvider = ({ children }) => {
       paymentMethod: "cash",
     });
     setCategoryServices([]);
+  };
+
+  const resetBooking = () => {
+    setCurrentStep(0);
+    setIsBooked(false);
+    setBookingId(null);
+    setError(null);
+    setIsSubmitting(false);
+    resetFormData();
   };
 
   const handleBookAppointment = async () => {
@@ -253,6 +254,7 @@ export const AppointmentProvider = ({ children }) => {
   const value = {
     token,
     setToken,
+    user,
     currentStep,
     setCurrentStep,
     isBooked,
@@ -265,6 +267,7 @@ export const AppointmentProvider = ({ children }) => {
     setIsSubmitting,
     formData,
     updateFormData,
+    resetFormData,
     resetBooking,
     handleBookAppointment,
     appointments,
@@ -283,7 +286,6 @@ export const AppointmentProvider = ({ children }) => {
     artists,
     setArtists,
     categoriesWithServices,
-    user,
     setUser
   };
 
