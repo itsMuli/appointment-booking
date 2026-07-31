@@ -1,0 +1,15 @@
+# Build the Vite app in FRONTEND/
+# Publish path is relative to `base`.
+
+[build]
+  base = "FRONTEND"
+  command = "npm run build"
+  publish = "build"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

@@ -1,0 +1,19 @@
+{
+  "name": "appointment-booking-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Top-level workspace scripts to run frontend, backend and dashboard concurrently",
+  "scripts": {
+    "install:all": "npm install && cd BACKEND && npm install && cd .. && cd FRONTEND && npm install && cd .. && cd dashboard && npm install",
+    "build": "npm --prefix FRONTEND install && npm --prefix FRONTEND run build",
+    "start:backend": "npm --prefix BACKEND run server",
+    "start:frontend": "npm --prefix FRONTEND run dev",
+    "start:dashboard": "npm --prefix dashboard run dev",
+    "dev": "concurrently \"npm --prefix BACKEND run server\" \"npm --prefix FRONTEND run dev\" \"npm --prefix dashboard run dev\"",
+    "dev:logs": "concurrently -n BACKEND,FRONTEND,DASHBOARD -c blue,green,magenta \"npm --prefix BACKEND run server\" \"npm --prefix FRONTEND run dev\" \"npm --prefix dashboard run dev\""
+  },
+  "dependencies": {
+    "multer": "^2.0.2",
+    "concurrently": "^8.2.0"
+  }
+}
