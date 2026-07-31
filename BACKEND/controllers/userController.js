@@ -54,8 +54,8 @@ export const loginController = async (req,res) => {
         console.log(error)
         res.status(500).send({
             success:false,
-            message:"Error in Login",
-            error
+            message: error.message || "Error in Login",
+            error: error.message || String(error)
         })
     }
 };

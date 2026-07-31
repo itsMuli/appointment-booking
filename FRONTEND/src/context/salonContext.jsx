@@ -131,40 +131,36 @@ export const AppointmentProvider = ({ children }) => {
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        // Fetch all data concurrently
         const [categoriesRes, servicesRes, artistsRes] = await Promise.all([
           fetch(`${API_URL}/api/categories`),
           fetch(`${API_URL}/api/services`),
           fetch(`${API_URL}/api/artist`),
         ]);
 
-        // Check if any request failed
-        if (!categoriesRes.ok) throw new Error("Failed to fetch categories");
-        if (!servicesRes.ok) throw new Error("Failed to fetch services");
-        if (!artistsRes.ok) throw new Error("Failed to fetch artists");
+        const errors = [];
+        if (!categoriesRes.ok) errors.push("categories");
+        if (!servicesRes.ok) errors.push("services");
+        if (!artistsRes.ok) errors.push("artists");
 
-        // Parse all responses
         const [categoryData, serviceData, artistData] = await Promise.all([
-          categoriesRes.json(),
-          servicesRes.json(),
-          artistsRes.json(),
+          categoriesRes.ok ? categoriesRes.json() : Promise.resolve(null),
+          servicesRes.ok ? servicesRes.json() : Promise.resolve(null),
+          artistsRes.ok ? artistsRes.json() : Promise.resolve(null),
         ]);
 
-        // Update state - extract the data arrays from the API response
-        // Handle both formats: { success: true, data: [...] } or direct array (backward compatibility)
-        if (categoryData.success && categoryData.categories) {
+        if (categoryData?.success && categoryData.categories) {
           setCategories(categoryData.categories);
         } else if (Array.isArray(categoryData)) {
           setCategories(categoryData);
         }
-        
-        if (serviceData.success && serviceData.services) {
+
+        if (serviceData?.success && serviceData.services) {
           setServices(serviceData.services);
         } else if (Array.isArray(serviceData)) {
           setServices(serviceData);
         }
-        
-        if (artistData.success && artistData.artists) {
+
+        if (artistData?.success && artistData.artists) {
           setArtists(artistData.artists);
           if (artistData.artists.length >= 1) {
             setFormData((prev) =>
@@ -179,9 +175,17 @@ export const AppointmentProvider = ({ children }) => {
             );
           }
         }
+
+        if (errors.length) {
+          setError(
+            `Could not load ${errors.join(", ")}. Check that the API is up and VITE_API_URL points to your Render backend.`
+          );
+        } else {
+          setError(null);
+        }
       } catch (error) {
         console.error("Error fetching initial data:", error);
-        setError(`Failed to load initial data: ${error.message}`);
+        setError(`Failed to load booking data: ${error.message}`);
       }
     };
 

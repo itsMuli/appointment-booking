@@ -57,7 +57,8 @@ const Appointment = () => {
     fetchServicesByCategory,
     resetFormData,
     addAppointment,
-    user
+    user,
+    error: dataError,
   } = useContext(AppointmentContext);
   // eslint-disable-next-line no-unused-vars
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
@@ -260,7 +261,12 @@ const Appointment = () => {
                 Service
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-4">
-                {displayedServices.map((service, index) => (
+                {displayedServices.length === 0 ? (
+                  <p className="text-gray-500 col-span-full text-sm">
+                    No services available yet. If this is the live site, the backend may be unable to reach the database.
+                  </p>
+                ) : (
+                  displayedServices.map((service, index) => (
                   <div
                     key={`service-${service._id || index}`}
                     onClick={() => handleServiceSelect(service)}
@@ -285,7 +291,8 @@ const Appointment = () => {
                       </div>
                     </div>
                   </div>
-                ))}
+                  ))
+                )}
               </div>
 
               {formData.category && displayedServices.length === 0 && (
@@ -748,6 +755,11 @@ const Appointment = () => {
       <div className="text-center text-2xl py-8">
         <Title text1={"BOOK"} text2={"APPONTMENT"} />
       </div>
+      {dataError && (
+        <div className="mx-4 lg:mx-8 xl:mx-12 mb-4 p-3 rounded-md bg-red-50 text-red-700 text-sm">
+          {dataError}
+        </div>
+      )}
 
       <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 px-4 lg:px-8 xl:px-12 min-h-[400px] bg-stone-100 rounded-lg">
       <nav className="w-full lg:w-1/5 mb-4">
