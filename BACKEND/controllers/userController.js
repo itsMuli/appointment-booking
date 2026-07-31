@@ -29,7 +29,7 @@ export const loginController = async (req,res) => {
 
         const match = await comparePassword(password,user.password)
         if(!match){
-            return res.status(200).send({
+            return res.status(401).send({
                 success:false,
                 message:"Invalid Password"
             })
@@ -64,47 +64,60 @@ const registerUser = async (req,res) => {
     try{
         const { name, email, password } = req.body;
 
+        // Validate required fields
+        if (!name || !email || !password) {
+            return res.status(400).json({
+                success: false,
+                message: "All fields are required"
+            });
+        }
+
         const exists = await userModel.findOne({email});
         if (exists) {
-            return res.json({
-                success:false,
-                message:"User already exists"
-            })
+            return res.status(409).json({
+                success: false,
+                message: "User already exists"
+            });
         }
         if (!validator.isEmail(email)) {
-            return res.json({
-                success:false,
-                message:"Please enter a valid email"
-            })
+            return res.status(400).json({
+                success: false,
+                message: "Please enter a valid email"
+            });
         }
         if (password.length < 8) {
-            return res.json({
-                success:false,
-                message:"Please enter a strong password"
-            })
+            return res.status(400).json({
+                success: false,
+                message: "Password must be at least 8 characters long"
+            });
         }
-        const hashedPassword = await hashPassword(password)
-
+        
+        const hashedPassword = await hashPassword(password);
         const newUser = await userModel({
             name,
             email,
-            password:hashedPassword
-        })
+            password: hashedPassword
+        });
 
-        const user = await newUser.save()
-
-        const token = createToken(user._id)
-        res.json({
-            success:true,
-            token
-        })
+        const user = await newUser.save();
+        const token = createToken(user._id);
+        
+        res.status(201).json({
+            success: true,
+            message: "User registered successfully",
+            token,
+            user: {
+                name: user.name,
+                email: user.email
+            }
+        });
 
     } catch (error) {
         console.log(error);
-        res.json({
-            success:false,
-            message:error.message
-        })
+        res.status(500).json({
+            success: false,
+            message: error.message || "Error registering user"
+        });
     }
 }
 

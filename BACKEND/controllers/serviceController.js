@@ -35,9 +35,9 @@ export const createService = async (req, res) => {
 export const getAllServices = async (req, res) => {
   try {
     const services = await Service.find();
-    res.status(200).json(services);
+    res.status(200).json({ success: true, services: services });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -57,13 +57,13 @@ export const getServicesByCategory = async (req, res) => {
     }
 
     if (!services.length) {
-      return res.status(404).json({ message: "No services found for the specified category" });
+      return res.status(404).json({ success: false, message: "No services found for the specified category" });
     }
 
-    res.status(200).json(services);
+    res.status(200).json({ success: true, services: services });
   } catch (error) {
     console.error("Error fetching services by category:", error);
-    res.status(500).json({ message: "Error fetching services", error: error.message });
+    res.status(500).json({ success: false, message: "Error fetching services", error: error.message });
   }
 };
 

@@ -18,10 +18,10 @@ export const getCategory = async (req, res) => {
       })) : []),
     ];
 
-    res.status(200).json(formattedCategories);
+    res.status(200).json({ success: true, categories: formattedCategories });
   } catch (error) {
     console.error('Error fetching categories:', error);
-    res.status(500).json({ message: 'Server error while fetching categories.', error: error.message });
+    res.status(500).json({ success: false, message: 'Server error while fetching categories.', error: error.message });
   }
 };
 
@@ -209,7 +209,7 @@ export const updateCategory = async (req, res) => {
     const { category } = req.params;
 
     if (!category || category === "undefined") {
-      return res.status(400).json({ message: "Category is required." });
+      return res.status(400).json({ success: false, message: "Category is required." });
     }
   
     try {
@@ -222,13 +222,13 @@ export const updateCategory = async (req, res) => {
       }
   
       if (!services.length) {
-        return res.status(404).json({ message: "No services found for the specified category." });
+        return res.status(404).json({ success: false, message: "No services found for the specified category." });
       }
   
-      res.status(200).json(services);
+      res.status(200).json({ success: true, services: services });
     } catch (error) {
       console.error("Error fetching services by category:", error);
-      res.status(500).json({ message: "Error fetching services.", error: error.message });
+      res.status(500).json({ success: false, message: "Error fetching services.", error: error.message });
     }
   };
   

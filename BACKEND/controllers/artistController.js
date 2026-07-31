@@ -8,9 +8,9 @@ const getAllArtists = async (req, res) => {
       ...artist.toObject(), 
       id: artist._id 
     }));
-    res.status(200).json(formattedArtists);
+    res.status(200).json({ success: true, artists: formattedArtists });
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    res.status(400).json({ success: false, message: err.message });
   }
 };
 

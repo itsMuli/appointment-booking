@@ -1,5 +1,7 @@
 import mongoose from "mongoose";
 import Appointment from "../models/appointmentModel.js";
+import Service from "../models/serviceModel.js";
+import Category from "../models/categoryModel.js";
 import nodemailer from "nodemailer";
 
 export const createAppointment = async (req, res) => {
@@ -42,6 +44,19 @@ export const createAppointment = async (req, res) => {
       });
     }
 
+    // Resolve category name (required) — look up from service when client sends ALL / omits category
+    let categoryName = category?.name;
+    if (!categoryName) {
+      const serviceDoc = await Service.findOne({ name: service.name });
+      if (serviceDoc?.category) {
+        const cat = await Category.findById(serviceDoc.category);
+        categoryName = cat?.name;
+      }
+    }
+    if (!categoryName) {
+      categoryName = 'General';
+    }
+
     // Generate unique booking ID
     const bookingId = 'BK' + Date.now().toString().slice(-6);
 
@@ -56,7 +71,7 @@ export const createAppointment = async (req, res) => {
         name: service.name,
         price: service.price
       },
-      category: category ? { name: category.name } : undefined,
+      category: { name: categoryName },
       date: new Date(date),
       timeSlot: time,
       paymentMethod: paymentMethod || 'mpesa',
